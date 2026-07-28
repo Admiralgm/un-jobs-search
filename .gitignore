@@ -1,0 +1,31 @@
+# Tracker files (contain personal job application data)
+*TRACKER*
+*tracker*.txt
+*tracker*.csv
+*tracker*.tsv
+UN-VACANCIES*
+UN_SECTOR*
+
+# JD files (scraped job descriptions — thousands of files)
+jds/
+scan_results/
+
+# Config files
+config.yaml
+.env
+.env.local
+credentials.md
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Backups
+*.bak
+*.bak.*
