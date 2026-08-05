@@ -16,12 +16,13 @@ BASE_DIR = Path("~/Downloads/DATA_REPOSITORY/WORKDIR/JD_FILES")
 DIR = BASE_DIR / "UN_UNOPS"
 
 HARD_REJECT = re.compile(
-    r"(intern|stagiaire|volunteer|unpaid|nutrition|agricultur|wash|civil engineer|"
-    r"shelter|procurement|human rights|medical|doctor|nurse|midwife|teacher|pedagog|"
-    r"child protection|gender|accountant|finance officer|budget officer|audit|hr officer|"
-    r"human resources|admin officer|logistics|supply chain|warehouse|fleet|"
-    r"security officer|driver|interpreter|translator|cook|cleaner|maintenance|"
-    r"electrician|plumber|junior professional|jpo)", re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|junior professional|jpo)", re.I)
 
 ICT_TITLE_KW = [
     "digital", "ict", "information", "technology", "cyber", "software", "data",
@@ -61,6 +62,10 @@ ICT_FULL_KW = ICT_TITLE_KW + [
     "computer use", "api integration", "system integration", "infrastructure as code",
     "containerization", "site reliability engineering", "observability", "monitoring",
 ]
+
+def is_ict_title(title):
+    t = " " + title.lower() + " "
+    return any(kw in t for kw in ICT_TITLE_KW)
 
 def is_ict_body(text):
     return any(kw in text.lower() for kw in ICT_FULL_KW)
@@ -122,7 +127,7 @@ async def main():
     print(f"Total new jobs found: {len(all_jobs)}")
 
     # HARD_REJECT filter on title only (saves HTTP requests on obvious non-ICT)
-    jobs_to_fetch = [(j, t, u) for j, t, u in all_jobs if not HARD_REJECT.search(t)]
+    jobs_to_fetch = [(j, t, u) for j, t, u in all_jobs if is_ict_title(t) or not HARD_REJECT.search(t)]
     rejected = len(all_jobs) - len(jobs_to_fetch)
     print(f"Hard-rejected by title: {rejected}")
     print(f"Jobs to fetch (body check): {len(jobs_to_fetch)}")

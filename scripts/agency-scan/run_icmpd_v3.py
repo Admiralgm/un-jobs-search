@@ -32,15 +32,16 @@ ICT_TITLE_KW = [
 
 # Use word boundaries for "intern" to avoid matching "International"
 HARD_REJECT = re.compile(
-    r"(\bintern\b|\binternship\b|stagiaire|volunteer|unpaid|chauffeur|driver|cleaner|cook|"
-    r"nutrition|agricultur|medical|doctor|nurse|midwife|teacher|pedagog|"
-    r"child protection|gender|accountant|finance|budget|audit|\bhr\b|human resources|"
-    r"admin|logistics|supply|warehouse|fleet|security|interpreter|translator|"
-    r"protocol|programme assistant|project associate|procurement|admin assistant|"
-    r"administrative|horticulture|gardener|midwifery|maternal|reproductive|"
-    r"population|demograph\b|health systems\b|multimedia|"
-    r"project officer|team assistant|executive officer|financial manager|"
-    r"communication assistant|junior project officer)", re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|programme assistant|project associate|"
+    r"horticulture|gardener|multimedia|project manager|project officer|"
+    r"team assistant|executive officer|financial manager|communication assistant|"
+    r"junior project officer)", re.I)
 
 def is_ict_title(title):
     # Extract the title part before the vacancy code
@@ -50,6 +51,10 @@ def is_ict_title(title):
     clean = re.sub(r'\s*-\s*(IP\d|S\d|M\d|P\d|D\d|LP|S)$', '', clean).strip()
     t = " " + clean.lower() + " "
     return any(kw in t for kw in ICT_TITLE_KW)
+
+def is_ict_body(text):
+    return any(kw in text.lower() for kw in ICT_TITLE_KW)
+
 
 def sanitize(name):
     return re.sub(r'\s+', '_', re.sub(r'[^a-zA-Z0-9\-_\s]', '', name).strip())[:60]
@@ -85,14 +90,9 @@ def main():
         
         print(f"Jobs found: {len(jobs)}")
         
-        ict_jobs = []
-        for j in jobs:
-            title = j['title']
-            if is_ict_title(title):
-                ict_jobs.append({'href': j['href'], 'title': title})
-                print(f"  ICT: {title[:70]}")
-            else:
-                print(f"  skip: {title[:60]}")
+        ict_jobs = [{'href': j['href'], 'title': j['title']} for j in jobs if is_ict_title(j['title']) or not HARD_REJECT.search(j['title'])]
+        for j in ict_jobs:
+            print(f"  candidate: {j['title'][:70]}")
         
         print(f"\nICT jobs: {len(ict_jobs)}")
         
@@ -126,6 +126,11 @@ def main():
                         break
                 jd_text = '\n'.join(lines[jd_start:]) if jd_start > 0 else text
                 
+                if not is_ict_body(jd_text):
+                    print(f"    SKIP: body not ICT ({title[:40]})")
+                    detail.close()
+                    continue
+
                 header = (f"# {title}\n\n"
                           f"**Job ID:** {job_id}\n"
                           f"**URL:** {href}\n"

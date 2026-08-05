@@ -8,11 +8,19 @@ from scrapling.fetchers import StealthyFetcher
 BASE_DIR=Path("~/Downloads/DATA_REPOSITORY/WORKDIR/JD_FILES"); CONCURRENT=4
 
 ICT_KW=[" it "," ict "," isp "," ai "," artificial "," telecom "," connectivity "," innovation ","information technology","chief technology"," cto "," chief information "," cio "," digital transformation "," digital officer "," systems administrator "," network engineer "," network administrator "," software engineer "," software developer "," data engineer "," data scientist "," cybersecurity "," information security "," devops "," cloud engineer "," cloud architect "," database administrator "," web developer "," full stack "," machine learning "," deep learning "," solutions architect "," enterprise architect "," technical lead ","it officer","it specialist","it manager","ict officer","ict specialist","ict coordinator","ai engineer","ai research","telecommunications","innovation officer","digital specialist","digital officer","digital advisor","tech lead","technology officer","technology specialist","system administrator","systems engineer","platform engineer","fullstack","front-end developer","backend developer","cloud computing","data analyst","data analytics","business intelligence","information management","knowledge management","infrastructure engineer","site reliability","devsecops","machine learning engineer","natural language processing","computer vision","robotics engineer","automation engineer","blockchain","distributed systems","microservices","api developer","integration engineer","middleware","erp consultant","crm consultant","business analyst it","it project manager","it director","head of it","head of digital","chief digital","digital innovation","emerging technology","technology strategy","it strategy","it governance","information systems","management information","gis specialist","geospatial","spatial data","data warehouse","data lake","etl developer","bi developer","business intelligence developer","report developer","database developer","sql developer","python developer","java developer","javascript developer","web application","mobile developer","app developer","ui designer","ux designer","product designer digital","technology for development","digital development","digital health","e-health","mhealth","telemedicine","fintech","digital finance","mobile money","internet of things","iot developer","embedded systems","firmware engineer","hardware engineer it","quantum computing","high performance computing","hpc","data center","data centre","network operations","noc engineer","it support","help desk","technical support it","it procurement","it asset management","digital platform","platform developer","developer platform","open source developer","freelance developer web","engineer","developer","technology","digital","cyber","software","data","cloud","full stack","fullstack","data strategist","it strategist","data governance","it governance","information governance"]
+HARD_REJECT = re.compile(
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer)", re.I)
+
 def is_ict_title(title):
     t=" "+title.lower()+" "
-    if re.compile(r"(intern|stagiaire|volunteer|unpaid|nutrition|agricultur|civil engineer|shelter|procurement|human rights|medical|doctor|nurse|midwife|teacher|pedagog|child protection|gender|accountant|finance officer|budget|audit|hr officer|human resources|admin officer|logistics|supply chain|warehouse|fleet|security officer|driver|interpreter|translator|cook|cleaner|maintenance|electrician|plumber)",re.I).search(title): return False
     return any(kw in t for kw in ICT_KW)
-def is_ict_full(title,body): return any(kw in (title+" "+body[:1000]).lower() for kw in ICT_KW)
+def is_ict_full(title,body): return any(kw in (title+" "+body[:3000]).lower() for kw in ICT_KW)
 def sanitize(name): return re.sub(r'\s+','_',re.sub(r'[^a-zA-Z0-9\-_\s]','',name).strip())[:60]
 
 PORTALS = {
@@ -66,7 +74,7 @@ async def scrape(portal_id):
                 jobs.append((jid,title,full_url))
         
         print(f"Jobs found: {len(jobs)}")
-        ict=[(j,t,u) for j,t,u in jobs if is_ict_title(t)]
+        ict=[(j,t,u) for j,t,u in jobs if is_ict_title(t) or not HARD_REJECT.search(t)]
         print(f"ICT: {len(ict)}")
         for j,t,u in ict: print(f"  {j}: {t[:70]}")
         

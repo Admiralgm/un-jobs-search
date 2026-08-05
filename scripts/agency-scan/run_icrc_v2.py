@@ -9,12 +9,13 @@ BASE_DIR = Path("~/Downloads/DATA_REPOSITORY/WORKDIR/JD_FILES")
 DIR = BASE_DIR / "UN_ICRC"
 
 HARD_REJECT = re.compile(
-    r"(intern|stagiaire|volunteer|unpaid|nutrition|agricultur|wash|civil engineer|"
-    r"shelter|procurement|human rights|medical|doctor|nurse|midwife|teacher|pedagog|"
-    r"child protection|gender|accountant|finance officer|budget officer|audit|hr officer|"
-    r"human resources|admin officer|logistics|supply chain|warehouse|fleet|"
-    r"security officer|driver|interpreter|translator|cook|cleaner|maintenance|"
-    r"electrician|plumber|junior professional|jpo)", re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|junior professional|jpo)", re.I)
 
 ICT_KW = [
     " it "," ict "," isp "," ai "," artificial "," telecom "," connectivity ",
@@ -53,7 +54,7 @@ def is_ict_title(title):
     return any(kw in t for kw in ICT_KW)
 
 def is_ict_full(title, body):
-    return any(kw in (title + " " + body[:1000]).lower() for kw in ICT_KW)
+    return any(kw in (title + " " + body[:3000]).lower() for kw in ICT_KW)
 
 def sanitize(name):
     return re.sub(r'\s+', '_', re.sub(r'[^a-zA-Z0-9\-_\s]', '', name).strip())[:60]
@@ -117,7 +118,7 @@ async def main():
         print(f"  kw={kw}: {len(links)} links, {new_count} new")
     
     print(f"\nTotal unique jobs: {len(all_jobs)}")
-    ict_jobs = [(j, t, u) for j, (t, u) in all_jobs.items() if is_ict_title(t)]
+    ict_jobs = [(j, t, u) for j, (t, u) in all_jobs.items() if is_ict_title(t) or not HARD_REJECT.search(t)]
     print(f"ICT-title candidates: {len(ict_jobs)}")
     
     saved = 0

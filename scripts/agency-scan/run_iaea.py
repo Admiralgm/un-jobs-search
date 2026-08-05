@@ -23,18 +23,33 @@ ICT_TITLE_KW = [
 ]
 
 HARD_REJECT = re.compile(
-    r"(\bintern\b|\binternship\b|stagiaire|volunteer|unpaid|chauffeur|driver|cleaner|cook|"
-    r"nutrition|agricultur|medical|doctor|nurse|midwife|teacher|pedagog|"
-    r"child protection|gender|accountant|finance|budget|audit|\bhr\b|human resources|"
-    r"admin|logistics|supply|warehouse|fleet|security|interpreter|translator|"
-    r"protocol|procurement|admin assistant|administrative|midwifery|maternal|"
-    r"health|safe|security|legal|policy|communication|"
-    r"programme officer|research|analyst|nuclear safety|radiation|inspector)",
-    re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|project manager|programme officer|research|"
+    r"analyst|nuclear safety|radiation|inspector)", re.I)
 
 def is_ict_title(title):
     t = " " + title.lower() + " "
     return any(kw in t for kw in ICT_TITLE_KW)
+
+ICT_BODY_KW = [
+    "digital", "ict", "information technology", "cyber", "software", "data",
+    "cloud", "network", "telecom", "telecommunications", "innovation", "ai ",
+    "artificial intelligence", "connectivity", "platform", "engineer", "developer",
+    "computer", "database", "infrastructure", "security", "geospatial", "gis",
+    "metadata", "api ", "automation", "analytics", "information management",
+    "knowledge management", "digital transformation", "digitalization",
+    "digitalisation", "machine learning", "it systems", "it infrastructure",
+    "it services", "information systems", "technology", "technical",
+]
+
+def is_ict_body(text):
+    return any(kw in text.lower() for kw in ICT_BODY_KW)
+
 
 def sanitize(name):
     return re.sub(r'\s+', '_', re.sub(r'[^a-zA-Z0-9\-_\s]', '', name).strip())[:60]
@@ -87,8 +102,8 @@ def main():
         
         print(f"Jobs found: {len(jobs)}")
         
-        ict_jobs = [j for j in jobs if is_ict_title(j['title'])]
-        print(f"ICT jobs: {len(ict_jobs)}")
+        ict_jobs = [j for j in jobs if is_ict_title(j['title']) or not HARD_REJECT.search(j['title'])]
+        print(f"Non-rejected jobs: {len(ict_jobs)}")
         
         saved = 0
         for job in ict_jobs:
@@ -119,6 +134,11 @@ def main():
                         break
                 jd_text = '\n'.join(lines[jd_start:]) if jd_start > 0 else dtext
                 
+                if not is_ict_body(jd_text):
+                    print(f"    SKIP: body not ICT ({title[:40]})")
+                    detail.close()
+                    continue
+
                 header = (f"# {title}\n\n**Job ID:** {job_id}\n**Organization:** IAEA\n"
                           f"**URL:** {href}\n**Scraped:** {datetime.now():%Y-%m-%d %H:%M}\n\n---\n\n")
                 out.write_text(header + jd_text, encoding="utf-8")

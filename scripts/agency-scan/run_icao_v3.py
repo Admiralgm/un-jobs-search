@@ -24,22 +24,27 @@ ICT_TITLE_KW = [
 ]
 
 HARD_REJECT = re.compile(
-    r"(\bintern\b|\binternship\b|stagiaire|volunteer|unpaid|chauffeur|driver|cleaner|cook|"
-    r"nutrition|agricultur|medical|doctor|nurse|midwife|teacher|pedagog|"
-    r"child protection|gender|accountant|finance|budget|audit|\bhr\b|human resources|"
-    r"admin|logistics|supply|warehouse|fleet|security|interpreter|translator|"
-    r"protocol|programme assistant|project associate|procurement|admin assistant|"
-    r"administrative|horticulture|gardener|midwifery|maternal|reproductive|"
-    r"population|demograph\b|health systems\b|multimedia|communication officer|"
-    r"administrative officer|executive assistant|events coordinator|events support|"
-    r"auditeur|auditor|primary care|practitioner|air transport|airport financial|"
-    r"airline fleet|airline operations|cabin safety|dangerous goods|personnel licensing|"
-    r"aviation medicine|rescue and fire|wildlife management)",
-    re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|programme assistant|project associate|"
+    r"horticulture|gardener|multimedia|communication officer|"
+    r"administrative officer|executive assistant|events coordinator|"
+    r"events support|auditeur|auditor|primary care|practitioner|air transport|"
+    r"airport financial|airline fleet|airline operations|cabin safety|"
+    r"dangerous goods|personnel licensing|aviation medicine|rescue and fire|"
+    r"wildlife management)", re.I)
 
 def is_ict_title(title):
     t = " " + title.lower() + " "
     return any(kw in t for kw in ICT_TITLE_KW)
+
+def is_ict_body(text):
+    return any(kw in text.lower() for kw in ICT_TITLE_KW)
+
 
 def sanitize(name):
     return re.sub(r'\s+', '_', re.sub(r'[^a-zA-Z0-9\-_\s]', '', name).strip())[:60]
@@ -82,8 +87,8 @@ def main():
         
         print(f"Jobs found: {len(jobs)}")
         
-        ict_jobs = [j for j in jobs if is_ict_title(j['title'])]
-        print(f"ICT jobs: {len(ict_jobs)}")
+        ict_jobs = [j for j in jobs if is_ict_title(j['title']) or not HARD_REJECT.search(j['title'])]
+        print(f"Non-rejected jobs: {len(ict_jobs)}")
         for j in ict_jobs:
             print(f"  ICT: {j['title'][:70]}")
         
@@ -133,6 +138,11 @@ def main():
                         detail.close()
                         continue
                 
+                if not is_ict_body(jd_text):
+                    print(f"    SKIP: body not ICT ({title[:40]})")
+                    detail.close()
+                    continue
+
                 header = (f"# {title}\n\n**Job ID:** {job_id}\n**Organization:** ICAO\n"
                           f"**Location:** {job['location']}\n**Posted:** {job['posted']}\n"
                           f"**URL:** {href}\n**Scraped:** {datetime.now():%Y-%m-%d %H:%M}\n\n---\n\n")

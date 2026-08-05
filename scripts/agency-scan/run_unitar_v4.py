@@ -18,13 +18,15 @@ DIR = BASE_DIR / "UN_UNITAR"
 DIR.mkdir(exist_ok=True)
 
 HARD_REJECT = re.compile(
-    r"(intern|stagiaire|volunteer|unpaid|nutrition|agricultur|civil engineer|"
-    r"shelter|procurement|human rights|medical|doctor|nurse|midwife|teacher|pedagog|"
-    r"child protection|gender|accountant|finance|budget|audit|hr |human resources|"
-    r"admin|logistics|supply|warehouse|fleet|security officer|driver|interpreter|"
-    r"translator|cook|cleaner|electrician|plumber|wash|nutritionist|epidemiologist|"
-    r"evaluation.*training|independent evaluation|monitoring.*evaluation|m&e|"
-    r"programme officer|programme assistant|project officer.*education)", re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|evaluation.*training|independent evaluation|"
+    r"monitoring.*evaluation|m&e|programme officer|programme assistant|"
+    r"project officer.*education)", re.I)
 
 ICT_TITLE_KW = [
     "geospatial", "gis", "satellite", "technology", "information technology",
@@ -32,9 +34,11 @@ ICT_TITLE_KW = [
     "developer", "developer and facilitator", "learning solutions",
     "educational technology", "instructional design", "online learning",
     "technical", "computer", "system", "database", "cloud", "network",
+    "security", "cyber", "information security", "cybersecurity",
 ]
 
 ICT_BODY_KW = [
+    "digital",
     "geospatial", "gis", "satellite", "remote sensing", "earth observation",
     "mapping", "spatial analysis", "cartographic", "geodata", "geojson",
     "python", "r ", "javascript", "sql", "machine learning", "deep learning",
@@ -129,7 +133,7 @@ def main():
         print(f"Jobs found: {len(jobs)}")
         
         # Step 2: Filter ICT
-        ict_jobs = [(j, t, u) for j, (t, u) in jobs.items() if is_ict_title(t)]
+        ict_jobs = [(j, t, u) for j, (t, u) in jobs.items() if is_ict_title(t) or not HARD_REJECT.search(t)]
         print(f"ICT-title: {len(ict_jobs)}")
         for j, t, u in ict_jobs:
             print(f"  {j}: {t[:70]}")

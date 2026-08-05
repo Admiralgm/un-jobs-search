@@ -32,17 +32,22 @@ ICT_TITLE_KW = [
 
 # Use word boundaries for "intern" to avoid matching "International"
 HARD_REJECT = re.compile(
-    r"(\bintern\b|\binternship\b|stagiaire|volunteer|unpaid|chauffeur|driver|cleaner|cook|"
-    r"nutrition|agricultur|medical|doctor|nurse|midwife|teacher|pedagog|"
-    r"child protection|gender|accountant|finance|budget|audit|\bhr\b|human resources|"
-    r"admin|logistics|supply|warehouse|fleet|security|interpreter|translator|"
-    r"protocol|programme assistant|project associate|procurement|admin assistant|"
-    r"administrative|horticulture|gardener|midwifery|maternal|reproductive|"
-    r"population|demograph\b|health systems\b|multimedia)", re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|programme assistant|project associate|"
+    r"horticulture|gardener|multimedia)", re.I)
 
 def is_ict_title(title):
     t = " " + title.lower() + " "
     return any(kw in t for kw in ICT_TITLE_KW)
+
+def is_ict_body(text):
+    return any(kw in text.lower() for kw in ICT_TITLE_KW)
+
 
 def sanitize(name):
     return re.sub(r'\s+', '_', re.sub(r'[^a-zA-Z0-9\-_\s]', '', name).strip())[:60]
@@ -86,7 +91,7 @@ def main():
         ict_jobs = []
         for j in jobs:
             title = j['title']
-            if is_ict_title(title):
+            if is_ict_title(title) or not HARD_REJECT.search(title):
                 ict_jobs.append({'title': title, 'oracleUrl': j['oracleUrl'], 'unfpaUrl': j['unfpaUrl']})
                 print(f"  ICT: {title[:70]}")
             else:
@@ -140,6 +145,11 @@ def main():
                     else:
                         continue
                 
+                if not is_ict_body(jd_text):
+                    print(f"    SKIP: body not ICT ({title[:40]})")
+                    detail.close()
+                    continue
+
                 header = (f"# {title}\n\n"
                           f"**Job ID:** {job_id}\n"
                           f"**URL:** {href}\n"

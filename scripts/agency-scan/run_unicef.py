@@ -35,20 +35,22 @@ PER_PAGE    = 20
 
 # ── KEYWORDS (same as untalent-jobs-search) ─────────────────────────────────
 HARD_REJECT = re.compile(
-    r"(intern|stagiaire|volunteer|unpaid|nutrition|agricultur|wash specialist|"
-    r"sanitation engineer|civil engineer|shelter|procurement|human rights|medical|"
-    r"doctor|nurse|midwife|teacher|pedagog|child protection|gender|accountant|"
-    r"finance officer|budget officer|audit|hr officer|human resources|admin officer|"
-    r"logistics|supply chain|warehouse|fleet|security officer|driver|interpreter|"
-    r"translator|cook|cleaner|maintenance|electrician|plumber)", re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer)", re.I)
 
 ICT_KW = [
+    "digital",
     " it ", " ict ", " isp ", " ai ", " artificial ", " telecom ", " connectivity ",
     " innovation ", "information technology", "chief technology", " cto ",
     " chief information ", " cio ", " digital transformation ", " digital officer ",
     " systems administrator ", " network engineer ", " network administrator ",
     " software engineer ", " software developer ", " data engineer ", " data scientist ",
-    " cybersecurity ", " information security ", " devops ", " cloud engineer ",
+    " cybersecurity ", " cyber security ", " information security ", " devops ", " cloud engineer ",
     " cloud architect ", " database administrator ", " web developer ",
     " full stack ", " machine learning ", " deep learning ",
     " solutions architect ", " enterprise architect ", " technical lead ",
@@ -99,7 +101,7 @@ def is_ict_title(title):
     return False, f"ICT-FAIL: '{title[:60]}'"
 
 def is_ict_full(title, body):
-    return any(kw in (title + " " + body[:1000]).lower() for kw in ICT_KW)
+    return any(kw in (title + " " + body[:3000]).lower() for kw in ICT_KW)
 
 def sanitize(name):
     return re.sub(r'\s+', '_', re.sub(r'[^a-zA-Z0-9\-_\s]', '', name).strip())[:60]
@@ -271,8 +273,7 @@ async def main():
         page_pass = []
         page_skip = 0
         for jid, title, url in unique_on_page:
-            ok, reason = is_ict_title(title)
-            if ok:
+            if is_ict_title(title)[0] or not HARD_REJECT.search(title):
                 page_pass.append((jid, title, url))
             else:
                 page_skip += 1

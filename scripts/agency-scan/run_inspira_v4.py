@@ -15,12 +15,13 @@ DIR.mkdir(exist_ok=True)
 API_LIST = "https://careers.un.org/api/public/opening/jo/list/filteredV2/en"
 
 HARD_REJECT = re.compile(
-    r"(intern|stagiaire|volunteer|unpaid|nutrition|agricultur|wash|civil engineer|"
-    r"shelter|procurement|human rights|medical|doctor|nurse|midwife|teacher|pedagog|"
-    r"child protection|gender|accountant|finance officer|budget officer|audit|hr officer|"
-    r"human resources|admin officer|logistics|supply chain|warehouse|fleet|"
-    r"security officer|driver|interpreter|translator|cook|cleaner|maintenance|"
-    r"electrician|plumber|junior professional|jpo)", re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|junior professional|jpo)", re.I)
 
 ICT_TITLE_KW = [
     "digital", "ict", "information", "technology", "cyber", "software", "data",
@@ -229,12 +230,11 @@ def main():
     for j, t in all_jobs_titles:
         print(f"  {j}: {t[:70]}")
     
-    # Step 2: Filter by title
-    ict_jobs = [(j, t) for j, t in all_jobs_titles if is_ict_title(t)]
-    print(f"\nICT-title matches: {len(ict_jobs)}")
+    # Step 2: Filter — no title gate; fetch all non-hard-rejected jobs, body check decides
+    ict_jobs = [(j, t) for j, t in all_jobs_titles if is_ict_title(t) or not HARD_REJECT.search(t)]
+    print(f"\nNon-rejected jobs: {len(ict_jobs)}")
     
-    maybe = [(j, t) for j, t in all_jobs_titles
-             if (j, t) not in ict_jobs and not HARD_REJECT.search(t) and len(t) > 15]
+    maybe = []
     
     # Step 3: Process listing data (already has full descriptions)
     saved = 0

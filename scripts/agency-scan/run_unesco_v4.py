@@ -18,17 +18,18 @@ DIR = BASE_DIR / "UN_UNESCO"
 DIR.mkdir(exist_ok=True)
 
 HARD_REJECT = re.compile(
-    r"(intern|stagiaire|volunteer|unpaid|nutrition|agricultur|wash|civil engineer|"
-    r"shelter|procurement|human rights|medical|doctor|nurse|midwife|teacher|pedagog|"
-    r"child protection|gender|accountant|finance officer|budget officer|audit|hr officer|"
-    r"human resources|admin officer|logistics|supply chain|warehouse|fleet|"
-    r"security officer|driver|interpreter|translator|cook|cleaner|maintenance|"
-    r"electrician|plumber|junior professional|jpo|chauffeur|education|legal|lawyer|"
-    r"adviser|director.*division|programme officer|programme assistant|project officer|"
-    r"project assistant|national.*officer.*education|community engagement|"
-    r"transformative|curriculum|heritage.*unit|documentary|water.*cooperation|"
-    r"groundwater|carpentry|joinery|consultant.*education|consultant.*culture|"
-    r"graphic.*novel)", re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|junior professional|jpo|education|lawyer|"
+    r"adviser|director.*division|programme officer|programme assistant|"
+    r"project officer|project assistant|national.*officer.*education|"
+    r"community engagement|transformative|curriculum|heritage.*unit|documentary|"
+    r"water.*cooperation|groundwater|carpentry|joinery|consultant.*education|"
+    r"consultant.*culture|graphic.*novel)", re.I)
 
 ICT_TITLE_KW = [
     " it ", "it,", "it.", "ict", "information systems", "information technology",
@@ -58,6 +59,7 @@ ICT_TITLE_KW = [
 ]
 
 ICT_BODY_KW = [
+    "digital",
     "python", "java", "javascript", "sql", "nosql", "react", "angular", "vue",
     "node.js", "typescript", "html", "css", "rest api", "graphql", "azure", "aws", "gcp",
     "terraform", "ansible", "jenkins", "gitlab", "github", "ci/cd", "linux", "unix",
@@ -184,7 +186,7 @@ async def main():
     
     print(f"\nTotal unique: {len(all_jobs)}")
     
-    ict_jobs = [(j, t, h) for j, (t, h) in all_jobs.items() if is_ict_title(t)]
+    ict_jobs = [(j, t, h) for j, (t, h) in all_jobs.items() if is_ict_title(t) or not HARD_REJECT.search(t)]
     print(f"ICT-title: {len(ict_jobs)}")
     for j, t, h in ict_jobs:
         print(f"  {j}: {t[:65]}")

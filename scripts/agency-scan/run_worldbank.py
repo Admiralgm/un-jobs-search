@@ -25,19 +25,25 @@ ICT_TITLE_KW = [
 ]
 
 HARD_REJECT = re.compile(
-    r"(\bintern\b|\binternship\b|stagiaire|volunteer|unpaid|chauffeur|driver|cleaner|cook|"
-    r"nutrition|medical|doctor|nurse|midwife|teacher|pedagog|child protection|gender|"
-    r"accountant|accounting|finance|budget|audit|\bhr\b|human resources|admin|logistics|supply|"
-    r"warehouse|fleet|security|interpreter|translator|procurement|admin assistant|"
-    r"administrative|environmental|water |agricultur|social development|civil engineer|"
-    r"transport|urban|education|health specialist|poverty|governance|legal|"
-    r"communications|public|external|investment officer|investment analyst|mining|"
-    r"financial management|operations officer|operations analyst|senior accounting|"
-    r"driver|country office|skilled trade)", re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|accounting|environmental|water|"
+    r"social development|transport|urban|education|health specialist|poverty|"
+    r"governance|communications|public|external|investment officer|"
+    r"investment analyst|mining|financial management|operations officer|"
+    r"operations analyst|senior accounting|country office|skilled trade)", re.I)
 
 def is_ict_title(title):
     t = " " + title.lower() + " "
     return any(kw in t for kw in ICT_TITLE_KW)
+
+def is_ict_body(text):
+    return any(kw in text.lower() for kw in ICT_TITLE_KW)
+
 
 def sanitize(name):
     return re.sub(r'\s+', '_', re.sub(r'[^a-zA-Z0-9\-_\s]', '', name).strip())[:60]
@@ -71,6 +77,11 @@ def fetch_detail(browser, url, job_id, title, location, posted, DIR):
             print(f"    SHORT ({len(jd_text)} chars), using full page text")
             jd_text = dtext
         
+        if not is_ict_body(jd_text):
+            print(f"    SKIP: body not ICT ({title[:40]})")
+            detail.close()
+            return False
+
         header = (f"# {title}\n\n**Job ID:** {job_id}\n**Organization:** World Bank\n"
                   f"**Location:** {location}\n**Posted:** {posted}\n"
                   f"**URL:** {url}\n**Scraped:** {datetime.now():%Y-%m-%d %H:%M}\n\n---\n\n")
@@ -137,8 +148,8 @@ def main():
         
         print(f"Total unique jobs: {len(unique_jobs)}")
         
-        ict_jobs = [j for j in unique_jobs if is_ict_title(j['title'])]
-        print(f"ICT jobs: {len(ict_jobs)}")
+        ict_jobs = [j for j in unique_jobs if is_ict_title(j['title']) or not HARD_REJECT.search(j['title'])]
+        print(f"Non-rejected jobs: {len(ict_jobs)}")
         for j in ict_jobs:
             print(f"  ICT: {j['title'][:70]}")
         

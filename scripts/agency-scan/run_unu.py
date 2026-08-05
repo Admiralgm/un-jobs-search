@@ -10,11 +10,13 @@ DIR = BASE_DIR / "UN_UNU"
 DIR.mkdir(exist_ok=True)
 
 HARD_REJECT = re.compile(
-    r"(intern|internship|stagiaire|volunteer|unpaid|nutrition|agricultur|"
-    r"medical|doctor|nurse|midwife|teacher|pedagog|child protection|gender|"
-    r"accountant|finance|budget|audit|hr |human resources|admin|logistics|"
-    r"supply|warehouse|fleet|security|driver|interpreter|translator|cook|"
-    r"cleaner|electrician|plumber|wash|library|assistant|programme assistant|"
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|library|assistant|programme assistant|"
     r"adjunct professor|resource nexus)", re.I)
 
 ICT_TITLE_KW = [
@@ -34,6 +36,10 @@ ICT_TITLE_KW = [
 def is_ict_title(title):
     t = " " + title.lower() + " "
     return any(kw in t for kw in ICT_TITLE_KW)
+
+def is_ict_body(text):
+    return any(kw in text.lower() for kw in ICT_TITLE_KW)
+
 
 def sanitize(name):
     return re.sub(r'\s+', '_', re.sub(r'[^a-zA-Z0-9\-_\s]', '', name).strip())[:60]
@@ -74,10 +80,10 @@ def main():
         
         print(f"Jobs found: {len(jobs)}")
         for j in jobs:
-            ict = "ICT" if is_ict_title(j['title']) else "skip"
+            ict = "candidate" if not HARD_REJECT.search(j['title']) else "skip"
             print(f"  [{ict}] {j['title'][:70]}")
         
-        ict_jobs = [(j['title'], j['link']) for j in jobs if is_ict_title(j['title'])]
+        ict_jobs = [(j['title'], j['link']) for j in jobs if is_ict_title(j['title']) or not HARD_REJECT.search(j['title'])]
         print(f"\nICT jobs: {len(ict_jobs)}")
         
         saved = 0
@@ -104,6 +110,11 @@ def main():
                         break
                 jd_text = '\n'.join(lines[jd_start:]) if jd_start > 0 else text
                 
+                if not is_ict_body(jd_text):
+                    print(f"    SKIP: body not ICT ({title[:40]})")
+                    detail.close()
+                    continue
+
                 header = f"# {title}\n\n**URL:** {link}\n**Scraped:** {datetime.now():%Y-%m-%d %H:%M}\n\n---\n\n"
                 out.write_text(header + jd_text, encoding="utf-8")
                 saved += 1

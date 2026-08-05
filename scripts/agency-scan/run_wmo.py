@@ -25,12 +25,22 @@ ICT_TITLE_KW = [
 ]
 
 HARD_REJECT = re.compile(
-    r"(human resources|hr officer|consultancy.*météorologie|consultancy.*meteorolog|"
-    r"support institutionnel|administrative|executive assistant|driver|cleaner)", re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|consultancy.*météorologie|"
+    r"consultancy.*meteorolog|support institutionnel|executive assistant)", re.I)
 
 def is_ict_title(title):
     t = " " + title.lower() + " "
     return any(kw in t for kw in ICT_TITLE_KW)
+
+def is_ict_body(text):
+    return any(kw in text.lower() for kw in ICT_TITLE_KW)
+
 
 def sanitize(name):
     return re.sub(r'\s+', '_', re.sub(r'[^a-zA-Z0-9\-_\s]', '', name).strip())[:60]
@@ -72,12 +82,12 @@ def main():
         
         print(f"Jobs found: {len(jobs)}")
         for j in jobs:
-            ict = "ICT" if is_ict_title(j['title']) else "skip"
+            ict = "candidate" if not HARD_REJECT.search(j['title']) else "skip"
             print(f"  [{ict}] {j['title'][:70]}")
         
         # Fetch detail pages for ICT jobs
-        ict_jobs = [j for j in jobs if is_ict_title(j['title'])]
-        print(f"\nICT jobs: {len(ict_jobs)}")
+        ict_jobs = [j for j in jobs if is_ict_title(j['title']) or not HARD_REJECT.search(j['title'])]
+        print(f"\nNon-rejected jobs: {len(ict_jobs)}")
         
         saved = 0
         for job in ict_jobs:
@@ -106,6 +116,11 @@ def main():
                 
                 jd_text = '\n'.join(lines[jd_start:]) if jd_start > 0 else text
                 
+                if not is_ict_body(jd_text):
+                    print(f"    SKIP: body not ICT ({title[:40]})")
+                    detail.close()
+                    continue
+
                 header = (f"# {title}\n\n"
                           f"**Job ID:** {jid}\n"
                           f"**Location:** {job['location']}\n"

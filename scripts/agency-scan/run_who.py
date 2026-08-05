@@ -8,7 +8,7 @@ from scrapling.fetchers import StealthyFetcher
 BASE_DIR = Path("~/Downloads/DATA_REPOSITORY/WORKDIR/JD_FILES")
 DIR = BASE_DIR / "UN_WHO"
 
-ICT_KW_TITLE = [" ai "," digital "," data "," technology "," innovation "," software ",
+ICT_KW_TITLE = ["digital", " ai "," digital "," data "," technology "," innovation "," software ",
     " cyber "," network "," system "," cloud "," engineer "," developer "," analyst ",
     " information "," it "," ict "," artificial "," telecom "," machine learning ",
     " chief technology "," chief information "," cto "," cio "," gis "," geospatial "]
@@ -19,18 +19,21 @@ ICT_KW_FULL = ICT_KW_TITLE + [" python "," java "," javascript "," database ",
     " microservices "," api developer "," integration engineer "," middleware ",
     " data warehouse "," data lake "," etl "," business intelligence "]
 
+HARD_REJECT = re.compile(
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer)", re.I)
+
 def is_ict_title(title):
     t = " " + title.lower() + " "
-    if re.compile(r"(intern|stagiaire|volunteer|unpaid|nutrition|agricultur|civil engineer|"
-        r"shelter|procurement|human rights|medical|doctor|nurse|midwife|teacher|pedagog|"
-        r"child protection|gender|accountant|finance|budget|audit|hr |human resources|"
-        r"admin|logistics|supply|warehouse|fleet|security officer|driver|interpreter|"
-        r"translator|cook|cleaner|electrician|plumber|wash|nutritionist|epidemiologist)", re.I).search(title):
-        return False
     return any(kw in t for kw in ICT_KW_TITLE)
 
 def is_ict_full(title, body):
-    return any(kw in (title + " " + body[:1500]).lower() for kw in ICT_KW_FULL)
+    return any(kw in (title + " " + body[:3000]).lower() for kw in ICT_KW_FULL)
 
 def sanitize(name):
     return re.sub(r'\s+', '_', re.sub(r'[^a-zA-Z0-9\-_\s]', '', name).strip())[:55]
@@ -75,7 +78,7 @@ async def main():
     print(f"Jobs found: {len(all_jobs)}")
 
     # Filter by ICT title
-    ict_jobs = [(j, t, u) for j, t, u in all_jobs if is_ict_title(t)]
+    ict_jobs = [(j, t, u) for j, t, u in all_jobs if is_ict_title(t) or not HARD_REJECT.search(t)]
     print(f"ICT: {len(ict_jobs)}")
     for j, t, u in ict_jobs:
         print(f"  {j}: {t[:65]}")

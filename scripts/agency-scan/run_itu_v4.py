@@ -21,8 +21,15 @@ DIR.mkdir(exist_ok=True)
 DIR = BASE_DIR / "UN_ITU"
 
 HARD_REJECT = re.compile(
-    r"(travel|voyage|chef.*section|section.*chef|head.*section|junior project officer|"
-    r"evaluation.*consultant|independent evaluation)", re.I)
+    r"(audit|agricultur|pedagog|wash specialist|maintenance|warehouse|"
+    r"admin officer|driver|translator|unpaid|cleaner|hr officer|accountant|"
+    r"stagiaire|child protection|interpreter|cook|security officer|volunteer|"
+    r"doctor|gender|civil engineer|procurement|human rights|logistics|"
+    r"supply chain|plumber|fleet|intern|shelter|medical|budget officer|"
+    r"sanitation engineer|nurse|midwife|nutrition|teacher|human resources|"
+    r"electrician|finance officer|travel|voyage|chef.*section|section.*chef|"
+    r"head.*section|junior project officer|evaluation.*consultant|"
+    r"independent evaluation)", re.I)
 
 ICT_TITLE_KW = [
     "digital", "ict", "information", "technology", "cyber", "software", "data",
@@ -60,6 +67,7 @@ ICT_TITLE_KW = [
 ]
 
 ICT_BODY_KW = [
+    "digital",
     "python", "java", "javascript", "sql", "nosql", "react", "angular", "vue",
     "node.js", "typescript", "html", "css", "rest api", "graphql",
     "azure", "aws", "gcp", "terraform", "ansible", "jenkins", "gitlab", "github",
@@ -184,12 +192,12 @@ def main():
                 skipped += 1
                 continue
             
-            # Check if ICT
-            if not is_ict_title(title):
-                print(f"  SKIP {jid}: not ICT ({title[:50]})")
+            if not (is_ict_title(title) or not HARD_REJECT.search(title)):
+                print(f"  SKIP {jid}: not ICT title")
                 skipped += 1
                 continue
             
+
             print(f"  Fetching {jid}...")
             try:
                 page.goto(url)
