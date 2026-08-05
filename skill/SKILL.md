@@ -75,6 +75,31 @@ The INSPIRA API returns `endDate` as a UTC timestamp like `2026-06-21T03:59:59.0
 
 **Consequence of getting this wrong:** The user will see an expired vacancy as "open" with a deadline that hasn't passed yet, apply to it, and discover it's closed. This wastes their time and erodes trust in the tracker. This happened on 2026-06-21 with UN_276853 — the tracker showed deadline 2026-06-21 but the actual deadline was June 20 and the job was already expired.
 
+### SYSTEM-WIDE TITLE-GATE ELIMINATION (2026-08-05) — ALL 27 SCRIPTS
+The FAO miss exposed that **every** portal script still used the title-only `is_ict_title()` pre-filter. On 2026-08-05 the gate was eliminated from ALL scripts:
+- **Category A (gate + body check existed):** `run_who.py`, `run_workday.py`, `run_icrc_v2.py`, `run_unido.py`, `run_unesco_v4.py`, `run_unitar_v4.py`, `run_unicef.py`, `run_itu_v4.py`, `run_inspira_v4.py` — gate replaced with `not HARD_REJECT.search(title)`; body check (`is_ict_body`/`is_ict_full`) now decides.
+- **Category B (gate, NO body check):** `run_ecb.py`, `run_iaea.py`, `run_icao_v3.py`, `run_icmpd_v3.py`, `run_ifad.py`, `run_ilo_v3.py`, `run_imo.py`, `run_oecd_v4.py`, `run_undp_v4.py`, `run_unfpa_v4.py`, `run_unhcr.py`, `run_unu.py`, `run_wipo.py`, `run_wmo.py`, `run_worldbank.py` — gate removed AND `is_ict_body(jd_text)` check + `HARD_REJECT` regex added before save.
+- **Keyword:** bare `"digital"` injected into EVERY script's ICT keyword list (many lists only had `"digital transformation"`, `"digital officer"` — a plain "Digital FAO" title had no match).
+- **Body-window:** `body[:1000]` → `body[:3000]` in `run_unicef.py`, `run_unido.py`, `run_workday.py`, `run_icrc_v2.py` (boilerplate pushes ICT content past 1000 chars).
+- **FOLLOW-UP (AGENT review 2026-08-05):** scripts with SEPARATE body keyword lists need "digital" injected there too — `run_itu_v4.py`, `run_unesco_v4.py`, `run_unitar_v4.py` each have `ICT_BODY_KW` (independent of `ICT_TITLE_KW`); ITU/UNITAR/UNESCO body lists lacked bare "digital" (only "digital transformation"). Fixed. `run_inspira_v4.py`/`run_unops_v3.py`/`run_who.py` build `ICT_FULL_KW`/`ICT_KW_FULL` from title lists so they inherit it. ALWAYS check for independent body lists when injecting keywords.
+- **Pitfall:** when patching gate-removal, watch for orphaned `else:` blocks (happened in `run_oecd_v4.py` — the old `else: print(skip)` survived the replacement and broke syntax).
+- **Pitfall:** inserted SKIP prints must use the file's actual loop variable — `run_undp_v4.py` uses `job['title']` not `title` (NameError risk).
+- **Verification:** `python3 -m py_compile run_*.py` (all 27 OK); `grep -rn "is_ict_title(" run_*.py | grep -v def` must be empty; smoke test proves `is_ict_full('Deputy Director, CSI Digital FAO...')` → True and IAEA `is_ict_body('Application Maintenance...')` → True.
+- **Backup:** `BACKUP/scripts_pre_20260805/` (27 files).
+
+### FAO SCRIPT FIX (2026-08-05) — TITLE GATE REMOVED (same bug class as UNOPS)
+The `run_fao.py` script had the title-only ICT gate that missed ICT-adjacent senior roles whose titles contain no ICT keyword. Confirmed miss: **FAO 2600555 Deputy Director, CSI Digital FAO and Agro-Informatics Division (D-1, Rome, DL 2026-08-07)** — title has no ICT keyword ("Deputy Director, CSI Digital...") so `is_ict_title()` returned False and the body was never fetched, even though the body is pure IT ("responsible for all Information Technology (IT) activities", ERP ecosystem, digital transformation).
+- **Fix:** `passing=[(j,t,u) for j,t,u in new if not HARD_REJECT.search(t)]` — fetch ALL non-hard-reject candidates, decide on body via `is_ict_full()`.
+- **Fix 2:** `is_ict_full` body window raised `body[:1000]` → `body[:3000]` — FAO pages start with boilerplate (diversity statement), ICT content can sit past 1000 chars.
+- **Result:** re-run recovered 2600555 + 8 other saved JDs. Verify after FAO scans that `Deputy Director`, `Director`, `Chief`, `Head of` titles with IT bodies are captured.
+
+### TRACKER COLUMN-FIXED INSERT (2026-08-05) — CRITICAL FOR ALL TRACKER EDITS
+The tracker file uses FIXED COLUMN positions (not flexible spacing). Measured from the WMO row template:
+- `ljust(5)` row number | `ljust(22)` org | `ljust(47)` title (max 44 visible, truncate with `…`) | `ljust(15)` deadline | `ljust(10)` score+emoji | `ljust(30)` VID | applied
+- **DO NOT** rebuild rows from scratch with guessed offsets — parse an existing template row, measure token positions, clone.
+- Tracker rows may have pre-existing corruption (title bleeding into deadline column) — verify with `re.match(r'^\d{4}-\d{2}-\d{2}$', dl)` before trusting sort order.
+- Always backup before edit: `cp UN-VACANCIES-TRACKER.txt BACKUP/UN-VACANCIES-TRACKER_$(date +%Y%m%d_%H%M%S).txt`
+
 ### UNOPS SCRIPT FIX (2026-07-20 v4.0)
 The `run_unops_v3.py` had 3 bugs fixed on 2026-07-20:
 - **Bug 1:** `fetch_page("https://careers.unops.org/")` fetched the **homepage**, not the job search page. Fixed to `https://careers.unops.org/careersmarketplace/SearchJobs/?jobRecordsPerPage=6&jobOffset={offset}` with pagination.
@@ -116,13 +141,14 @@ Priority order — scan portals that have the most ICT/AI yield:
 8. ILO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_ilo_v3.py`
 9. OECD — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_oecd_v4.py`
 10. WFP — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_workday.py` (Workday — covers WFP, IMF, UNHCR)
+11. WIPO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_wipo.py` (Taleo portal — ICT Dept posts IT transformation/change management roles)
 
 **Tier 3 (low yield — scan only if time/budget allows):**
-11. UNDP — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_undp_v4.py`
-12. WMO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_wmo.py`
-13. FAO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_fao.py`
-14. ICAO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_icao_v3.py`
-15. INSPIRA — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_inspira_v4.py` (covers UNCTAD, UNECE, UNECA, UNWTO, UPU, UN-Habitat, UNOV, UNON, UNSSC, UNIDIR, UNGM, UNJSPF)
+12. UNDP — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_undp_v4.py`
+13. WMO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_wmo.py`
+14. FAO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_fao.py`
+15. ICAO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_icao_v3.py`
+16. INSPIRA — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_inspira_v4.py` (covers UNCTAD, UNECE, UNECA, UNWTO, UPU, UN-Habitat, UNOV, UNON, UNSSC, UNIDIR, UNGM, UNJSPF)
 
 ### 🚨🚨🚨 CRITICAL: INSPIRA DUAL-QUERY REQUIREMENT — READ THIS OR MISS VACANCIES 🚨🚨🚨
 
@@ -146,9 +172,9 @@ After running `run_inspira_v4.py`, the agent MUST verify no IST-family jobs were
 
 **When the user provides a filtered INSPIRA URL:** Always extract the `jf` (Job Family) and/or `jn` (Job Network) parameters from the URL's `data` JSON. Cross-reference against the script's query parameters. If the user's URL uses a filter the script doesn't query, REPORT the gap immediately.
 
-**Skip these (low/zero ICT yield, confirmed 2026-05-28):**
+**Skip these (low/zero ICT yield, confirmed 2026-05-28; WIPO removed 2026-07-28 — ICT Dept posts relevant roles):**
 - UNFPA, UNICRI, UNITAR, UNU, GICHD, UNDRR, UNESCAP, UNESCWA — produce ~0 ICT vacancies per cycle
-- IMO, IFAD, WIPO, UNIDO, UNHCR — rarely ICT roles, scan only if explicitly requested
+- IMO, IFAD, UNIDO, UNHCR — rarely ICT roles, scan only if explicitly requested
 
 ### EXECUTION SEQUENCE (follow in order — do NOT skip steps)
 
@@ -355,7 +381,7 @@ User holds dual citizenship: Serbian AND Czech Republic (EU). Serbian nationals-
 
 | Aspect | This skill (un-jobs-search) | un-jobs-search-minimaltoken |
 |--------|---------------------------|-----------------------------|
-| WORKDIR | `WORKDIR/` | `WORKDIR/` |
+| WORKDIR | `WORKDIR/` | `WORKDIR-MINIMALTOKEN/` |
 | Tracker | `UN-VACANCIES-TRACKER.txt` | `UN_SECTOR_VACCANCIES.txt` (legacy) |
 | JDs | `JD_FILES/{AGENCY}/` | N/A |
 | Sources | Direct portals via per-agency scripts | Direct portals via web-preclean.py |
@@ -573,41 +599,35 @@ Color coding: 🔴 75+ STRONG FIT | 🟠 65-74 COMPETITIVE | 🟡 50-64 STRETCH 
 ================================================================================
 ```
 
-**Column widths (FIXED — pad with spaces):**
+**Column widths (FIXED — pad with spaces) — LIVE FORMAT verified 2026-08-03 (136 chars total, NOT 134):**
 - `#`: 5 chars left-aligned (e.g. `1    `)
 - `Organization`: 22 chars, truncate with `…` if longer, pad to 22
-- `Position Title`: 44 chars, truncate at 44, pad to 44
-- `Deadline`: 16 chars (e.g. `2026-06-15      ` or `TBD             ` or `Open (Roster)   `)
+- `Position Title`: 47 chars, truncate at 47, pad to 47
+- `Deadline`: 15 chars (e.g. `2026-06-15     ` or `TBD            ` or `Open (Roster)  `)
 - `Score`: 10 chars — emoji + space + 2-digit number (e.g. `🟡 72      `)
-- `Vacancy ID`: **29 chars** left-aligned, pad with spaces (e.g. `N_276860                     `)
-- `Applied`: **8 chars** (`NO      ` or `YES     `)
+- `Vacancy ID`: **30 chars** left-aligned, pad with spaces
+- `Applied`: **7 chars** (`NO     ` or `YES    `)
 
-**Total row width: 5 + 22 + 44 + 16 + 10 + 29 + 8 = 134 chars**
+**Total row width: 5 + 22 + 47 + 15 + 10 + 30 + 7 = 136 chars** (verified against live tracker on 2026-08-03)
 
-**CRITICAL:** The Vacancy ID field is **29 chars**, NOT 30. The Applied column starts at index 126 (0-indexed), not 127. Using 30 chars for the vid field causes the `N` from `NO` to be included in the vid, producing corrupted rows like `N_276860                     N` with `O      ` as the Applied value.
+**🚨 PITFALL (2026-08-03):** This skill previously documented 134 chars / 29-char VID / 44-char title / 16-char deadline / 8-char applied. The LIVE tracker is 136 chars: title=47, deadline=15, vid=30, applied=7. Parsing the live file with the old 134-char spec yields 0 rows (data loss risk on rebuild). ALWAYS measure column boundaries from the live file's anchor regexes before rebuilding: dl=`2026-\d\d-\d\d|TBD|Open`, score=`[🔴🟠🟡🟢] \d+` at index 89, vid=`[A-Za-z0-9_\-]+` at index 99, applied at index 129.
 
 **Build rows with explicit padding:**
 ```python
 def make_row(e):
     num = str(e['num']).ljust(5)[:5]
     org = e['org'].ljust(22)[:22]
-    title = e['title'].ljust(44)[:44]
-    dl = e['deadline'].ljust(16)[:16]
+    title = e['title'].ljust(47)[:47]
+    dl = e['deadline'].ljust(15)[:15]
     score = e['score'].ljust(10)[:10]
-    vid = e['vid'].ljust(29)[:29]
-    applied = ('YES' if e['applied'] else 'NO').ljust(8)[:8]
+    vid = e['vid'].ljust(30)[:30]
+    applied = ('YES' if e['applied'] else 'NO').ljust(7)[:7]
     return f"{num}{org}{title}{dl}{score}{vid}{applied}"
 ```
 
 **Separator line:** exactly 134 dashes (`'-' * 134`)
 
-**Total row width: 134 chars** (5+22+44+16+10+29+8=134)
-
-**CRITICAL:** When building rows, use exactly 29 chars for the Vacancy ID field. Using 30 chars pushes the Applied column one position right, causing `NO` to become `NNO` (the `N` of `NO` gets absorbed into the vid field). Build rows as:
-```python
-row = f"{num5}{org22}{title44}{dl16}{score10}{vid29}{applied8}"
-assert len(row) == 134
-```
+**Total row width: 136 chars** (5+22+47+15+10+30+7=136)
 
 **🚨 PITFALL — Row width verification must use raw line, not rstrip():**
 When verifying row widths after a rebuild, `len(line.rstrip())` will show ~128 chars because trailing spaces after the `Applied` column are stripped. The `Applied` field is 8 chars (`NO      `) but `rstrip()` collapses it to 2 (`NO`), losing 6 chars. Always verify with `len(line)` (no rstrip) to get the true 134-char width. Example:
@@ -824,12 +844,12 @@ a scan report.
 
 The `hermes-cloudflare` plugin has been installed, providing **8 REST tools** via Cloudflare's Browser Rendering API. These run on Cloudflare's edge infrastructure — NOT localhost — meaning they bypass Cloudflare WAF blocks that stop local browsers.
 
-**Plugin:** `config/plugins/hermes-cloudflare/` (8 tools, powered by `httpx`)
+**Plugin:** `~/.hermes/plugins/hermes-cloudflare/` (8 tools, powered by `httpx`)
 **Credentials:** `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (environment variables)
-**Storage:** Written to `config/profiles/agent/.env` ✓
+**Storage:** Written to `~/.hermes/profiles/agent/.env` ✓
 **Status:** ✅ Verified and active — Cloudflare Browser Rendering API working, confirmed 2026-06-05
 **Free-tier limit:** ~10 min browser time per day (~120–300 `cf_content`/`cf_markdown` calls)
-**Reactivation:** On Hermes restart, Hermes loads `config/profiles/agent/.env` automatically
+**Reactivation:** On Hermes restart, Hermes loads `~/.hermes/profiles/agent/.env` automatically
 
 ### Available Tools
 
@@ -897,7 +917,7 @@ The `hermes-cloudflare` plugin has been installed, providing **8 REST tools** vi
 Credentials are already saved and working. On a fresh machine, set them like this:
 
 ```bash
-# File: config/profiles/agent/.env
+# File: ~/.hermes/profiles/agent/.env
 export CLOUDFLARE_API_TOKEN="cfat_..."
 export CLOUDFLARE_ACCOUNT_ID="0e6b9047dd2aa520360de8d051b63471"
 ```
@@ -1919,7 +1939,7 @@ with Camoufox(headless=True) as browser:
     page.wait_for_load_state("networkidle", timeout=15000)
     text = page.inner_text("body")
 ```
-**Note:** Requires the venv Python (`~/.venv/bin/python3`) and the server.py patch.
+**Note:** Requires the venv Python (`~/venv/bin/python3`) and the server.py patch.
 
 ### REST API (Preferred Method)
 See `references/camoufox-rest-api-complete-reference-2026-06-04.md` for the complete protocol.
