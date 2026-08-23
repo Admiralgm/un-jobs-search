@@ -33,7 +33,7 @@
 
 ### 5. UNJobNet
 - **URL:** https://www.unjobnet.org
-- **Access:** USER MUST LOG IN FIRST via browser (CAPTCHA blocks automated login). Credentials stored in skill: your-email@example.com / YOUR_PASSWORD
+- **Access:** USER MUST LOG IN FIRST via browser (CAPTCHA blocks automated login). Credentials stored in skill: XXXXXX / XXXXXX
 - **Method (after login):** browser_navigate to `/jobs?orderby=recent`, type keywords in searchbox, click Search. Extract job data via browser_console from Vue.js rendered elements.
 - **Alternative (public API):** `https://www.unjobnet.org/api/v1/jobs/search?keywords=ICT&limit=20` — works WITHOUT login! Use curl.
 - **RSS:** `https://www.unjobnet.org/rss.xml` — minimal (2-3 items), not useful for full scan.
