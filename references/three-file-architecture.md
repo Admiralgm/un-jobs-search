@@ -55,9 +55,12 @@ TOTAL MATCH (%) = (Technical Relevance × 0.60) + (Seniority Alignment × 0.20) 
 | 55-69 | STRETCH | 🟡 YELLOW |
 | <55 | LOW FIT | 🟢 GREEN |
 
-## Entry Format
+## Entry Format — TABLE-ONLY (current since 2026-05-29)
 
-Every entry MUST include:
-- MATCH ANALYSIS with all three scoring dimensions (weighted scores shown)
-- 🚀 Positioning Advice (bullet points)
-- 📊 Verdict with percentage and Confidence Level
+The active tracker files are **TABLE-ONLY**: `# | Organization | Position Title | Deadline | Score | Vacancy ID | Applied` rows, nothing else.
+- NO `====` entry blocks, NO colored headers, NO `- Title:` / `- VACANCY ID:` field lists
+- NO MATCH ANALYSIS, NO 🚀 Positioning Advice, NO 📊 Verdict sections
+- Scoring detail goes in JD_FILES/ and scan reports — never in the tracker
+
+The scoring table above is the historical 3-dimension model used during
+scoring sessions; it informs scores, it does not get written into tracker files.

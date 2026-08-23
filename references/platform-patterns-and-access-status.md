@@ -2,7 +2,7 @@
 
 **Purpose:** Quick-reference for portal access methods, platform types, and known quirks.
 **Updated:** 2026-05-23 (after Batches 1–5)
-**Main skill:** `un-jobs-search-minimaltoken`
+**Main skill:** `un-jobs-search`
 
 ---
 

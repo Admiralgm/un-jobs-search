@@ -1,7 +1,7 @@
 # Per-Agency Scraper Script Pitfalls (2026-07-02 Session)
 
 ## Context
-These issues were discovered during a full 16-portal scan using the `un-jobs-search` skill's per-agency scripts (`run_who.py`, `run_itu_v4.py`, etc.). They apply to any session using those scripts, which are shared between `un-jobs-search` and `un-jobs-search-minimaltoken`.
+These issues were discovered during a full 16-portal scan using the `un-jobs-search` skill's per-agency scripts (`run_who.py`, `run_itu_v4.py`, etc.). They apply to any session using those scripts, which live in the `un-jobs-search` skill.
 
 ## Pitfall 1: Scripts Save to ~/Downloads/TEST/ Not Workdir
 

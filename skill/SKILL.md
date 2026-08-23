@@ -2,11 +2,12 @@
 name: un-jobs-search
 description: >-
   Total and fully reliable UN sector vacancies extraction and tracking.
-  Merges un-jobs-search-minimaltoken (token-optimized scanning, 32+ direct
-  career portals) with new-jobs-search (full JD scraper, 128 JD files,
-  25 agencies, Per-Agency Scripts). Scans ALL UN/International organization
+  Merges the token-optimized scanning approach (32+ direct career portals)
+  with new-jobs-search (full JD scraper, 128 JD files, 25 agencies,
+  Per-Agency Scripts). Fully self-contained: references/, scripts/ and
+  templates/ migrated in from the removed legacy skill. Scans ALL UN/International organization
   career portals. Extracts full JDs. Maintains UN-VACANCIES-TRACKER.txt.
-  Scores using vacancy-compatibility-scoring-engine **v5.0** (loaded as
+  Scores using vaccancy-compatibility-scoring-engine **v5.0** (loaded as
   a skill, not inline) with full CV repository reference.
   **CONTEXTUAL PRE-FILTER: broad keyword capture across 10 career contexts
   (ICT, EdTech, telecom, AI/ML, UN/dev, government, healthcare, finance,
@@ -16,7 +17,7 @@ version: 2.1.0
 author: User / Hermes Agent
 tags: [un-jobs, direct-portals, scoring, full-jd, tracker, one-by-one, broad-scan]
 related_skills:
-  - vacancy-compatibility-scoring-engine
+  - vaccancy-compatibility-scoring-engine
   - cv-repository
   - tracker-file-format
 ---
@@ -53,8 +54,17 @@ This skill file is 1920 lines / 114KB. Reading it all will burn 300K+ tokens. DO
 5. NEVER delegate scanning to subagents — do everything in the parent agent
 6. NEVER retry a failed portal script more than once — report "SKIPPED" and move on
 7. NEVER skip Phase 0 (hygiene) — backup and expired cleanup are mandatory every session
-8. NEVER load the `un-jobs-search-minimaltoken` skill — it is LEGACY. This skill (`un-jobs-search`) is the ONLY correct one.
-9. NEVER use `web-preclean.py` — that is a minimaltoken tool. Use the per-agency `run_{portal}.py` scripts instead.
+8. The legacy `un-jobs-search-minimaltoken` skill is REMOVED. This skill is the ONLY scanner and is fully self-contained (references/, scripts/, templates/).
+9. NEVER use `web-preclean.py` — legacy utility. Use the per-agency `run_{portal}.py` scripts instead.
+
+### 🚨🚨🚨 PYTHON INVOCATION RULE — READ THIS FIRST (2026-08-16) 🚨🚨🚨
+**ALL `run_*.py` scripts MUST be executed with the direct venv path:**
+```
+~/.venv/bin/python3 <script>
+```
+- **NEVER `uv run python3`** — it breaks PyYAML's CLoader (`hasattr(yaml,'CLoader')=False`) → camoufox ImportError crash. This caused the 2026-08-16 AGENT UNICEF scan failure and tracker corruption.
+- **NEVER bare `python3`** — system Python 3.14 has no packages and a cffi architecture mismatch.
+- Verified working: `~/.venv/bin/python3 -c "import yaml; hasattr(yaml,'CLoader')"` → True.
 
 ### 🚨🚨🚨 CRITICAL DEADLINE WARNING — READ THIS OR RISK CORRUPTING THE TRACKER 🚨🚨🚨
 
@@ -127,28 +137,29 @@ The `broad_scan_keywords.py` title pre-filter was tightened from 200+ broad keyw
 Priority order — scan portals that have the most ICT/AI yield:
 
 **Tier 1 (always scan — high ICT yield):**
-1. WHO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_who.py`
-2. ITU — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_itu_v4.py`
-3. UNICEF — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_unicef.py` (primary, uses tightened broad_scan_keywords.py v3.0)
-   - Alternative: `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/camoufox_fulljd_scraper_v2.py` (Camoufox REST API, also covers ICRC)
-4. IAEA — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_iaea.py`
-5. UNOPS — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_unops_v3.py`
+1. WHO — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_who.py`
+2. ITU — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_itu_v4.py`
+3. UNICEF — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_unicef.py` (primary, uses tightened broad_scan_keywords.py v3.0)
+   - Alternative: `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/camoufox_fulljd_scraper_v2.py` (Camoufox REST API, also covers ICRC)
+4. IAEA — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_iaea.py`
+5. UNOPS — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_unops_v3.py`
 
 **Tier 2 (rotate daily — medium yield):**
-6. ICRC — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_icrc_v2.py` (primary)
+6. ICRC — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_icrc_v2.py` (primary)
    - Alternative: covered by camoufox_fulljd_scraper_v2.py (same script as UNICEF alternative)
-7. UNESCO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_unesco_v4.py`
-8. ILO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_ilo_v3.py`
-9. OECD — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_oecd_v4.py`
-10. WFP — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_workday.py` (Workday — covers WFP, IMF, UNHCR)
-11. WIPO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_wipo.py` (Taleo portal — ICT Dept posts IT transformation/change management roles)
+7. UNESCO — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_unesco_v4.py`
+8. ILO — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_ilo_v3.py`
+9. OECD — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_oecd_v4.py`
+10. WFP — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_workday.py` (Workday — covers WFP, IMF, UNHCR)
+11. WIPO — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_wipo.py` (Taleo portal — ICT Dept posts IT transformation/change management roles)
 
 **Tier 3 (low yield — scan only if time/budget allows):**
-12. UNDP — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_undp_v4.py`
-13. WMO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_wmo.py`
-14. FAO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_fao.py`
-15. ICAO — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_icao_v3.py`
-16. INSPIRA — `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_inspira_v4.py` (covers UNCTAD, UNECE, UNECA, UNWTO, UPU, UN-Habitat, UNOV, UNON, UNSSC, UNIDIR, UNGM, UNJSPF)
+12. UNDP — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_undp_v4.py`
+13. WMO — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_wmo.py`
+14. FAO — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_fao.py`
+15. ICAO — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_icao_v3.py`
+16. INSPIRA — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_inspira_v4.py` (covers UNCTAD, UNECE, UNECA, UNWTO, UPU, UN-Habitat, UNOV, UNON, UNSSC, UNIDIR, UNGM, UNJSPF)
+17. UN Tourism (ex-UNWTO) — `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_untourism.py` (server-rendered HTML table at untourism.int/work-with-us; apply links are S3 PDFs; ICT roster = Area II Information Technology, Madrid + Riyadh, ONGOING)
 
 ### 🚨🚨🚨 CRITICAL: INSPIRA DUAL-QUERY REQUIREMENT — READ THIS OR MISS VACANCIES 🚨🚨🚨
 
@@ -192,6 +203,15 @@ Read both files from workdir:
 Backup both to BACKUP/ subdirectory with today's date+time suffix.
 Extract all existing Vacancy IDs from the tracker into a Python set for dedup.
 
+**STEP 2b — LIVE DEADLINE VERIFICATION (MANDATORY — do NOT skip)**
+For EVERY vacancy in the tracker that will remain open after cleanup AND every
+new vacancy to be written: verify its deadline LIVE today via the per-portal
+methods in `references/deadline-formats-and-audit-protocol.md` (curl batch first;
+browser only for JS-rendered portals). Classify each as VERIFIED | CORRECTED |
+EXPIRED (→ archive) | ROLLING (genuine TBD confirmed live). Do NOT write any row
+whose deadline was not verified today. This step exists because unverified TBD
+rows let 13 expired WB vacancies sit in the tracker as OPEN (2026-08-21 incident).
+
 **STEP 3 — Expired Cleanup (same execute_code call as Step 2)**
 Parse every deadline in the tracker summary table. If deadline < today AND APPLIED: NO:
 - Move entry to UN-VACANCIES-ARCHIVE.txt with APPLIED: EXPIRED
@@ -220,7 +240,7 @@ For each portal in your queue (8 max):
 
 a) Run the script via terminal:
 ```
-uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_{portal}.py
+~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_{portal}.py
 ```
 Use `terminal(background=true, notify_on_complete=true)` for long-running scripts.
 Wait for completion via `process(action="wait", session_id=..., timeout=120)`.
@@ -231,9 +251,9 @@ b) When the script completes, check its output:
 - Did it produce 0 new jobs? → That's valid. Report "0 new jobs for {portal}" and move on
 
 **STEP 7 — Score New Entries (1 execute_code call)**
-Load the vacancy-compatibility-scoring-engine skill:
+Load the vaccancy-compatibility-scoring-engine skill:
 ```
-skill_view(name='vacancy-compatibility-scoring-engine')
+skill_view(name='vaccancy-compatibility-scoring-engine')
 ```
 Then for each new JD file found:
 - Parse the JD content
@@ -324,7 +344,11 @@ END OF REPORT
 ### ANTI-HALLUCINATION RULES (Deepseek V4 Flash specific)
 1. If a scraper script fails, do NOT assume jobs exist on that portal. Report "SKIPPED" and move on.
 2. If you cannot extract a Vacancy ID from the script output or JD file, do NOT invent one. Use `[GEN-UNKNOWN]` and flag it.
-3. If a deadline is not visible in the JD file, write "TBD" — do NOT guess.
+3. If a deadline is not visible in the JD file, DO NOT write "TBD". Extract it from
+   the LIVE portal per the DEADLINE PROTOCOL above (curl/browser per-portal methods
+   in `references/deadline-formats-and-audit-protocol.md`). Only a LIVE-confirmed
+   rolling/roster position may carry TBD. If the portal is unreachable, queue the
+   row for verification and flag it in the report — never write an unverified TBD.
 4. If a grade is not visible, write "Unknown" — do NOT guess.
 5. If a script produces empty output, do NOT fabricate job listings. Report "0 new jobs" — that is valid.
 6. NEVER copy job titles from memory or previous sessions. ONLY use what the script output and JD files show.
@@ -375,30 +399,22 @@ User holds dual citizenship: Serbian AND Czech Republic (EU). Serbian nationals-
 
 ---
 
-## 🚨 DISAMBIGUATION: This skill vs un-jobs-search-minimaltoken
+## 🚨 WORKDIR & TRACKER (canonical)
 
-**This skill (`un-jobs-search`) uses `WORKDIR/` — a DIFFERENT directory from `un-jobs-search-minimaltoken` which uses `DATA_REPOSITORY/` files.**
+This skill operates EXCLUSIVELY on:
+- WORKDIR: `WORKDIR/` — `~/Downloads/DATA_REPOSITORY/WORKDIR/`
+- Tracker: `UN-VACANCIES-TRACKER.txt`
+- JDs: `JD_FILES/{AGENCY}/`
+- Sources: direct portals via per-agency `run_{portal}.py` scripts
+- Archive: `UN-VACANCIES-ARCHIVE.txt`
 
-| Aspect | This skill (un-jobs-search) | un-jobs-search-minimaltoken |
-|--------|---------------------------|-----------------------------|
-| WORKDIR | `WORKDIR/` | `WORKDIR-MINIMALTOKEN/` |
-| Tracker | `UN-VACANCIES-TRACKER.txt` | `UN_SECTOR_VACCANCIES.txt` (legacy) |
-| JDs | `JD_FILES/{AGENCY}/` | N/A |
-| Sources | Direct portals via per-agency scripts | Direct portals via web-preclean.py |
-
-**Before any execution, confirm which skill's WORKDIR to use.** The old `DATA_REPOSITORY/UN_SECTOR_VACCANCIES.txt` files are legacy artifacts from the pre-June 2026 format. The current master tracker is `WORKDIR/UN-VACANCIES-TRACKER.txt`.
-
-### 🚨 PITFALL: Loading the wrong skill first causes tracker confusion
-
-If you load `un-jobs-search-minimaltoken` first (which references `DATA_REPOSITORY/UN_SECTOR_VACCANCIES.txt`), and then switch to `un-jobs-search` (which uses `WORKDIR/UN-VACANCIES-TRACKER.txt`), the backup will be from the wrong file. The user will notice immediately and be frustrated.
-
-**Rule:** Always confirm which tracker file the session is meant to work with. The canonical answer for "UN-JOBS-SEARCH" (the skill the user asked for) is `WORKDIR/UN-VACANCIES-TRACKER.txt`. Do NOT read or backup `DATA_REPOSITORY/UN_SECTOR_VACCANCIES.txt` unless the user explicitly tells you that file is the target.
+The old `DATA_REPOSITORY/UN_SECTOR_VACCANCIES.txt` files are legacy artifacts from the pre-June 2026 format. Do NOT read or backup them unless the user explicitly names that file as the target. All portal knowledge lives in this skill's `references/` (93 files, migrated).
 
 ### 🚨 PITFALL: Legacy-to-Master Migration Gaps
 
-Some entries from the legacy `UN_SECTOR_VACCANCIES.txt` may have been dropped during the June 2026 format migration — especially rolling/TBD entries, applied-YES entries, and entries with duplicate VIDs. When a user asks "does this vacancy exist" and you search only the master tracker, you may falsely report it missing.
+Some entries from the legacy `UN_SECTOR_VACCANCIES.txt` may have been dropped during the June 2026 format migration — especially when they/TBD entries, applied-YES entries, and entries with duplicate VIDs. When a user asks "does this vacancy exist" and you search only the master tracker, you may falsely report it missing.
 
-**Vacancy validation procedure:** See `references/vacancy-validation-workflow.md` for the full 5-step validate-from-file-to-live-portal protocol. In short: JD_FILES → master tracker → legacy tracker → archive → live portal check.
+**Vacancy validation procedure:** JD_FILES → master tracker → legacy `UN_SECTOR_VACCANCIES.txt` (if the user names it) → archive → live portal check.
 
 ## WORKING DIRECTORY (ABSOLUTE — ALL PATHS BELOW THIS)
 
@@ -672,7 +688,7 @@ Score: [score]
 ### Batch Scoring Workflow (20+ files) — Validated 2026-06-03 on 90 files
 
 1. **Load CV Repository:** `skill_view(name='cv-repository')`
-2. **Load Scoring Engine:** `skill_view(name='vacancy-compatibility-scoring-engine')`
+2. **Load Scoring Engine:** `skill_view(name='vaccancy-compatibility-scoring-engine')`
 3. **Run pre-filter** on all JD files: classify as SCOREABLE / DISQUALIFIED / SKIP
    - Use `scripts/prefilter_and_classify.py` as template
    - Hard filters: nationals-only, Ukraine, intern/volunteer, grade too low (P-2/G-series/N0-A/B), expired, non-broad match
@@ -792,7 +808,7 @@ Score: [score]
 | Indeed | UNU (careers.unu.edu) | Playwright + cookie accept + card text | ✅ Working |
 | Cloudflare (blocked) | UNDRR, UNESCAP, UNESCWA, others | Cannot scrape with local tools | ❌ Blocked locally |
 | **Cloudflare Browser Rendering** | Any WAF-blocked (REST API) | `cf_crawl`, `cf_scrape`, `cf_markdown`, `cf_content`, `cf_screenshot` | ✅ Active, bypasses WAF |
-| **Screenshot→RapidAPI OCR** | Any portal where DOM/API scraping fails (Cloudflare managed JS challenges, broken SPAs) | Camoufox full-page screenshot → RapidAPI OCR `/ocr` endpoint | ✅ Verified 2026-06-15 — ~97% accuracy on detail pages, ~85% on listing pages |
+| **Screenshot→OCR (OpenRouter VLM)** | Any portal where DOM/API scraping fails (Cloudflare managed JS challenges, broken SPAs) | Camoufox full-page screenshot → OpenRouter VLM `anthropic/claude-sonnet-4.6` | ✅ Verified 2026-06-15 — ~97% accuracy on detail pages, ~85% on listing pages (RapidAPI OCR DEAD 2026-08-23) |
 | Custom | IMO | Needs investigation | ❌ Failing |
 
 ### Camoufox REST API — Quick Reference
@@ -831,12 +847,31 @@ The user prefers quality over speed. When scraping JS-heavy portals (ICRC, UNICE
 
 ---
 
-## 📆 DEADLINE AUDIT PROTOCOL — See references/deadline-formats-and-audit-protocol.md
+## 📆 DEADLINE PROTOCOL — MANDATORY (2026-08-21)
 
-Mission-critical. Contains per-agency deadline format reference, known scraper
-date bugs (run_inspira_v4.py off-by-one), systematic audit procedure, and portal
-verification URLs. Run whenever deadlines are questioned or before finalizing
-a scan report.
+**⛔ RULE: NO UNVERIFIED DEADLINES. EVER. NO EXCEPTIONS.**
+
+A deadline is written to the tracker ONLY if it was extracted from the LIVE portal
+on the day the row is written (or revalidated live that day). TBD means "confirmed
+rolling/roster on the portal TODAY" — TBD NEVER means "not checked". If a deadline
+cannot be verified, do NOT write the row with a guess or a stale date: queue the
+verification and flag it in the scan report.
+
+**Two mandatory enforcement points:**
+1. **BEFORE writing any new/updated row:** extract the deadline from the LIVE portal
+   via the per-portal methods in `references/deadline-formats-and-audit-protocol.md`
+   (curl batch first; browser only for JS-rendered portals).
+2. **AFTER scanning, BEFORE finalizing the report:** re-verify every deadline in the
+   tracker that was NOT fetched live today (any carried-over or previously-TBD row).
+   Classify each: VERIFIED | CORRECTED | EXPIRED (→ archive) | ROLLING (genuine TBD).
+
+**Why this exists — 2026-08-21 incident:** 13 World Bank vacancies with `TBD`
+deadlines sat in the tracker as OPEN while already EXPIRED (closed 08-11…08-20).
+Root cause: TBD was used as "unknown" during a scan and rows were never revalidated.
+The user found this unacceptable. Full per-portal format reference, extraction
+commands, and the audit procedure: **`references/deadline-formats-and-audit-protocol.md`**
+(mandatory reading — run whenever deadlines are questioned or before finalizing
+a scan report).
 
 ---
 
@@ -844,12 +879,12 @@ a scan report.
 
 The `hermes-cloudflare` plugin has been installed, providing **8 REST tools** via Cloudflare's Browser Rendering API. These run on Cloudflare's edge infrastructure — NOT localhost — meaning they bypass Cloudflare WAF blocks that stop local browsers.
 
-**Plugin:** `~/.hermes/plugins/hermes-cloudflare/` (8 tools, powered by `httpx`)
+**Plugin:** `config/plugins/hermes-cloudflare/` (8 tools, powered by `httpx`)
 **Credentials:** `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (environment variables)
-**Storage:** Written to `~/.hermes/profiles/agent/.env` ✓
+**Storage:** Written to `config/.env` ✓
 **Status:** ✅ Verified and active — Cloudflare Browser Rendering API working, confirmed 2026-06-05
 **Free-tier limit:** ~10 min browser time per day (~120–300 `cf_content`/`cf_markdown` calls)
-**Reactivation:** On Hermes restart, Hermes loads `~/.hermes/profiles/agent/.env` automatically
+**Reactivation:** On Hermes restart, Hermes loads `config/.env` automatically
 
 ### Available Tools
 
@@ -917,7 +952,7 @@ The `hermes-cloudflare` plugin has been installed, providing **8 REST tools** vi
 Credentials are already saved and working. On a fresh machine, set them like this:
 
 ```bash
-# File: ~/.hermes/profiles/agent/.env
+# File: config/.env
 export CLOUDFLARE_API_TOKEN="cfat_..."
 export CLOUDFLARE_ACCOUNT_ID="0e6b9047dd2aa520360de8d051b63471"
 ```
@@ -926,7 +961,7 @@ export CLOUDFLARE_ACCOUNT_ID="0e6b9047dd2aa520360de8d051b63471"
 >
 > **Authentication pitfall:** 32-character hex strings (e.g. `0e6b9047...`) are Account IDs, NOT API tokens. Cloudflare rejects Account IDs as tokens with error 6003/6111. The real token is a long alphanumeric string prefixed with `cfat_` (53 chars).
 
-**Quick verification:** Run the standalone script — `uv run python3 scripts/run_cf_verify.py` (or pass token/account_id as args) to verify credentials in one shot without touching the tracker.
+**Quick verification:** Run the standalone script — `~/.venv/bin/python3 scripts/run_cf_verify.py` (or pass token/account_id as args) to verify credentials in one shot without touching the tracker.
 
 ### When to Use Cloudflare vs Camoufox vs Local Browser
 
@@ -945,14 +980,15 @@ See `references/cloudflare-auth-pitfall-2026-06-05.md` for authentication debugg
 
 ---
 
-## 📸 SCREENSHOT→RAPIDAPI OCR — Fallback for Impossible Portals (2026-06-15)
+## 📸 SCREENSHOT→OCR — Fallback for Impossible Portals (2026-06-15, updated 2026-08-23)
 
-**When DOM/API scraping fails entirely** (Cloudflare managed JS challenges, broken SPAs, portals that return empty HTML to automation tools), use Camoufox full-page screenshots + RapidAPI OCR as a last-resort extraction method.
+> **⚠️ RapidAPI OCR is DEAD (2026-08-23): HTTP 403 "You are not subscribed to this API." The `/ocr` endpoint and key are defunct. Use the OpenRouter VLM instead (model `anthropic/claude-sonnet-4.6`, key from `config/.env`).**
+
+**When DOM/API scraping fails entirely** (Cloudflare managed JS challenges, broken SPAs, portals that return empty HTML to automation tools), use Camoufox full-page screenshots + OpenRouter VLM OCR as a last-resort extraction method.
 
 **Verified accuracy:** ~97% on job detail pages (single-column layout), ~85% on listing pages (table grid layout). Detail page OCR is good enough to produce usable JD markdown files with only minor post-processing.
 
 ### ⚠️ Limitations
-- **30 calls/minute hard cap** (RapidAPI FreeOCR.ai rate limit) — do NOT exceed
 - **~40s per page** (25s Camoufox JS render + 15s OCR API call) — slow, use only when DOM fails
 - **~15MB per image limit** — full-page screenshots at 900KB-1.6MB are fine
 - **Listing pages lose ~15% of data** — row misalignment, deadline off by 1-2 days, location swaps
@@ -984,13 +1020,23 @@ sleep 25  # JS render wait
 # Step 3: Full-page screenshot
 camofox --format json screenshot --path /tmp/job_detail.png --full-page "$TAB"
 
-# Step 4: OCR via RapidAPI
-curl --request POST \
-  --url https://apis-freeocr-ai.p.rapidapi.com/ocr \
-  --header 'x-rapidapi-host: apis-freeocr-ai.p.rapidapi.com' \
-  --header 'x-rapidapi-key: 7c96c48e62msh0c4ddb5bb4c4944p13b6c6jsnc957462c41ea' \
-  -F "image=@/tmp/job_detail.png" \
-  --max-time 90
+# Step 4: OCR via OpenRouter VLM (anthropic/claude-sonnet-4.6)
+KEY=$(grep '^OPENROUTER_API_KEY=' config/.env | cut -d= -f2-)
+python3 - "$KEY" <<'PYEOF'
+import base64, json, sys, urllib.request
+key = sys.argv[1]
+b64 = base64.b64encode(open("/tmp/job_detail.png", "rb").read()).decode()
+payload = {"model": "anthropic/claude-sonnet-4.6",
+  "messages": [{"role": "user", "content": [
+    {"type": "text", "text": "OCR this job page screenshot. Transcribe ALL text exactly, preserving layout order."},
+    {"type": "image_url", "image_url": {"url": "data:image/png;base64," + b64}}]}],
+  "max_tokens": 4000}
+req = urllib.request.Request("https://openrouter.ai/api/v1/chat/completions",
+  data=json.dumps(payload).encode(),
+  headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
+with urllib.request.urlopen(req, timeout=180) as r:
+    print(json.load(r)["choices"][0]["message"]["content"])
+PYEOF
 
 # Step 5: Save as JD file
 curl ... | python3 -c "import sys,json;print(json.load(sys.stdin).get('text',''))" > JD_FILES/UN_AGENCY/Job_Title.md
@@ -999,7 +1045,7 @@ curl ... | python3 -c "import sys,json;print(json.load(sys.stdin).get('text','')
 ### Key Findings from 2026-06-15 ICRC Test
 
 1. **Detail pages OCR much better than listing pages** — Single-column vertical layout avoids the table-row misalignment that plagues listing page OCR.
-2. **Output is clean markdown** — RapidAPI returns `##` headings and `-` bullet lists. Almost directly usable as a JD file.
+2. **Output is clean markdown** — the VLM returns `##` headings and `-` bullet lists. Almost directly usable as a JD file.
 3. **Cookie banners are captured as noise** — Footer text and cookie consent popups appear in output. Strip them in post-processing.
 4. **Rate limit is per-minute, not per-second** — 30 calls/minute means you can fire 30 pages in quick succession, then wait 60s. For a 20-job portal, that's one batch.
 5. **Full-page screenshots are ~900KB-1.6MB** — Well under the 15MB API limit. No need to compress further.
@@ -1011,7 +1057,7 @@ curl ... | python3 -c "import sys,json;print(json.load(sys.stdin).get('text','')
 | DOM snapshot | 100% | ~5s | ❌ No |
 | Camoufox REST API evaluate | 100% | ~25s | ❌ No |
 | Cloudflare Browser Rendering | 100% | ~5s | ❌ No (managed challenges) |
-| **Screenshot→RapidAPI OCR** | **~97%** | **~40s** | **✅ Yes** |
+| **Screenshot→OCR (OpenRouter VLM)** | **~97%** | **~40s** | **✅ Yes** |
 
 ---
 
@@ -1145,12 +1191,12 @@ The Camoufox REST API v2 methodical extraction uses 25s JS render waits per page
 ```python
 # Launch scripts in parallel batches via terminal(background=True)
 # Group 1: API-based and fast scripts
-terminal(background=True, command="uv run python3 run_inspira_v4.py", notify_on_complete=True, timeout=120)
-terminal(background=True, command="uv run python3 run_undp_v4.py", notify_on_complete=True, timeout=120)
+terminal(background=True, command="~/.venv/bin/python3 run_inspira_v4.py", notify_on_complete=True, timeout=120)
+terminal(background=True, command="~/.venv/bin/python3 run_undp_v4.py", notify_on_complete=True, timeout=120)
 # ... up to 10-20 parallel processes
 
 # Group 2: Camoufox-dependent scripts (after Group 1 finishes)
-terminal(background=True, command="uv run python3 run_who.py", notify_on_complete=True, timeout=180)
+terminal(background=True, command="~/.venv/bin/python3 run_who.py", notify_on_complete=True, timeout=180)
 # ...
 
 # Group 3: Camoufox REST API for UNICEF/ICRC/WTO (requires server restart between portals)
@@ -1250,7 +1296,7 @@ This is a separate operating mode from the full scan-score-tracker pipeline. Run
 
 ### Protocol
 1. Scripts are at `~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/`
-2. Execute each with `uv run python3 run_{portal}.py` — one at a time, in exact order
+2. Execute each with `~/.venv/bin/python3 run_{portal}.py` — one at a time, in exact order
 3. If a site fails, write `PORTAL_ERROR: [Name] — [Reason]` and immediately move to the next
 4. **CRITICAL PROHIBITIONS:**
    - Do NOT write to or modify UN-VACANCIES-TRACKER.txt
@@ -1365,7 +1411,7 @@ Updated to v2.0 (2026-06-09) with full contextual coverage.
 
 1. **Per-agency scraper scripts** (for scanning portals) are in:
    `~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/`
-   Run with: `uv run python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_{portal}.py`
+   Run with: `~/.venv/bin/python3 ~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/run_{portal}.py`
 
 2. **Batch scoring/rebuild scripts** are in the WORKDIR:
    `~/Downloads/DATA_REPOSITORY/WORKDIR/scripts/`
@@ -1375,9 +1421,9 @@ Updated to v2.0 (2026-06-09) with full contextual coverage.
 
 Located in `scripts/` directory of this skill. Per-agency scrapers:
 
-**Run with: `uv run python3 run_{portal}.py`** (all portals including WHO — as of 2026-06-04)
+**Run with: `~/.venv/bin/python3 run_{portal}.py`** (all portals including WHO — as of 2026-06-04)
 
-> **⚠️ WHO script fix (2026-06-04):** `run_who.py` previously used plain `python3` which hit system Python 3.13 with a cffi architecture mismatch (`_cffi_backend.cpython-313-darwin.so arm64 vs x86_64`). Switching to `uv run python3` (which uses the venv) fixes this. The shebang `#!/usr/bin/env python3` in the script is harmless — `uv run` overrides it.
+> **⚠️ Python invocation history (read this — it changed 2026-08-16):** `run_who.py` previously used plain `python3` which hit system Python 3.13 with a cffi architecture mismatch (`_cffi_backend.cpython-313-darwin.so arm64 vs x86_64`). The 2026-06-04 fix switched to `uv run python3` (venv). **2026-08-16: `uv run python3` was found to break PyYAML's CLoader (`hasattr(yaml,'CLoader')=False`) → camoufox ImportError crash (UNICEF scan failed; AGENT incident).** The canonical invocation for ALL run_*.py scripts is now the direct venv path: `~/.venv/bin/python3` — NEVER `uv run python3`, NEVER bare `python3`. The shebang `#!/usr/bin/env python3` in the script is harmless — the explicit venv path overrides it.
 
 ### New-jobs-search scrapers (25 scripts):
 run_unicef.py, run_itu_v4.py, run_unesco_v4.py, run_unitar_v4.py,
@@ -1390,7 +1436,7 @@ run_unhcr.py, run_wipo.py, run_unido.py
 ### Camoufox REST API scrapers (2 scripts, added 2026-06-06):
 camoufox_rest_scan.py — First-pass Camoufox REST scraper for UNICEF + ICRC + **WTO** (basic v1 — covers all 3)
 camoufox_fulljd_scraper_v2.py — Full-JD methodical one-by-one extractor for **UNICEF + ICRC only** (quality v2 — does NOT cover WTO)
-  - Usage: `uv run python3 camoufox_fulljd_scraper_v2.py`
+  - Usage: `~/.venv/bin/python3 camoufox_fulljd_scraper_v2.py`
   - Extracts 8-17KB full JD content per job with 25s JS render waits
   - Filters non-ICT and disqualified jobs automatically
   - Saves with metadata headers (grade, location, deadline, URL)
@@ -1399,14 +1445,12 @@ camoufox_fulljd_scraper_v2.py — Full-JD methodical one-by-one extractor for **
   - **Coverage gap (patched 2026-06-07):** v2 only handles ICRC + UNICEF. For WTO scraping, fall back to `camoufox_rest_scan.py` (v1) which still has the `scrape_wto()` function and Workday parsing. Do NOT assume v2 covers WTO from its docstring header — it doesn't.
 
 References:
-- `references/linkedin-job-scraping-2026-06.md` — LinkedIn job scraping research: tool comparison (`linkedin-jobs-scraper`, Apify, RSS endpoint), query templates for User's target roles, anti-detection notes, and integration with UN-JOBS-SEARCH scoring pipeline.\n- `references/tracker-append-vs-rebuild-2026-06-12.md` — Safe tracker rebuild pattern that appends to existing rows instead of full reconstruction (avoids data loss from missing org/title fields).
 - `references/tracker-cleanup-current-format-v1.md` — Complete cleanup algorithm with code, verification, and archive-append
-- `references/shell-token-escape-redaction-2026-06-07.md` — How to work around bash mangling literal redaction tokens (`***`) when sourcing secrets in `terminal()` calls — use a wrapper script or Python with `os.environ` instead of inline `export KEY=*** $(cmd)`.
 
-### Minimaltoken utilities (LEGACY — DO NOT USE):
+### Utility scripts (migrated from the legacy skill):
 web-preclean.py, merge-vacancies.py, bulk-add-vacancy-ids.py,
 audit-and-verify.py, update-internal-ids.py
-**WARNING: These are legacy minimaltoken tools. Do NOT use them in this skill. Use the per-agency `run_{portal}.py` scripts instead.**
+These migrated utilities exist in this skill's `scripts/` and the workdir `WORKDIR/scripts/`. Primary extraction tools are the per-agency `run_{portal}.py` scripts.**
 
 ### Batch scoring scripts (2 scripts, added 2026-06-03):
 prefilter_and_classify.py  — Categorise all JD files into SCOREABLE/DISQUALIFIED
@@ -1421,8 +1465,8 @@ rebuild_complete.py        — Structured-dict tracker rebuild with manual overr
 
 ### Scoring Engine Architecture (UPDATED 2026-06-09 — v2.1.0)
 
-**The authoritative scoring engine is now the `vacancy-compatibility-scoring-engine` skill (v5.0).**
-Load it with `skill_view(name='vacancy-compatibility-scoring-engine')` before any scoring session.
+**The authoritative scoring engine is now the `vaccancy-compatibility-scoring-engine` skill (v5.0).**
+Load it with `skill_view(name='vaccancy-compatibility-scoring-engine')` before any scoring session.
 It contains the full 7-parameter methodology, domain caps, calibration anchors, and current-work overrides.
 
 The system has **three scoring scripts. Do NOT confuse them:**
@@ -1438,7 +1482,7 @@ The system has **three scoring scripts. Do NOT confuse them:**
 - `score_all.py` is the **legacy authoritative** scorer. It was built during the 2026-06-09 session to implement domain-capped P1 with director double-cap. It is NOT pre-installed — it lives in the WORKDIR and edits accumulate over sessions.
 - `batch_score_contextual.py` adds **P8 Contextual Compatibility** (0-20 pts) on top of P1-P7. It evaluates whether the job's SECTOR, FUNCTION, and ENVIRONMENT overlap with User's 9 proven career contexts (education_edtech, telecom_connectivity, ai_ml_agentic, government_public_sector, un_international_dev, healthcare_healthtech, africa_emerging_markets, finance_fintech, enterprise_it, payment_transit). Max total is still 100 (P1-P7 capped at 80, P8 adds up to 20).
 - **Before ANY edit to any scoring script, backup first:** `cp score_all.py BACKUP/score_all_$(date +%Y%m%d_%H%M).py`
-- The `vacancy-compatibility-scoring-engine` skill is the **authoritative methodology** (SKILL.md + references + calibration anchors). Load it before every scoring session.
+- The `vaccancy-compatibility-scoring-engine` skill is the **authoritative methodology** (SKILL.md + references + calibration anchors). Load it before every scoring session.
 
 **🆕 score_all.py overwritten without backup (2026-06-09):** During a session of penalty tuning, domain cap fixes, and date parser patches, `score_all.py` was overwritten 3+ times with no versioned backup. The original v1 scoring logic is **permanently lost**. The only remaining trace is the backup tracker file `BACKUP/UN-VACANCIES-TRACKER_VALID_20260609_1536.txt`. **Rule: Before ANY edit to the scoring engine, run `cp score_all.py BACKUP/score_all_$(date +%Y%m%d_%H%M).py`.**
 
@@ -1532,7 +1576,7 @@ Long-running Playwright Chrome processes die after ~5 pages (EPIPE crash).
 
 ## Token Optimization Rules (for scanning, NOT scoring)
 
-**NOTE: These rules are from the legacy minimaltoken merge. The per-agency `run_{portal}.py` scripts already handle site detection, rendering, and extraction internally. Do NOT use web-preclean.py — it is a minimaltoken tool. If a per-agency script fails, report and skip — do NOT fall back to web-preclean.py.**
+**NOTE: These rules are from the legacy scanner merge. The per-agency `run_{portal}.py` scripts already handle site detection, rendering, and extraction internally. Do NOT use web-preclean.py. If a per-agency script fails, report and skip — do NOT fall back to web-preclean.py.**
 
 **Rule 1 — Site type detection:** Handled by per-agency scripts internally. OPEN (200) → script uses requests | WAF (403) → script uses Camoufox | JS → script uses Camoufox | API → script uses urllib
 **Rule 2 — Scripts handle extraction:** The per-agency scripts produce clean JD markdown files in JD_FILES/{AGENCY}/. No pre-cleaning needed.
@@ -1883,7 +1927,7 @@ The v7.1 rebuild (2026-06-09) on 300 entries produced:
 4. Before adding ANY entry to tracker, check Vacancy ID against BOTH:
    - UN-VACANCIES-TRACKER.txt
    - UN-VACANCIES-ARCHIVE.txt
-   Do NOT check legacy UN_SECTOR_VACCANCIES.txt — it is a minimaltoken file outside the workdir.
+   Do NOT check legacy UN_SECTOR_VACCANCIES.txt — it is a legacy file outside the workdir.
 5. Same `(title.lower(), organization.lower())` tuple also counts as duplicate
 
 ---
@@ -1939,7 +1983,7 @@ with Camoufox(headless=True) as browser:
     page.wait_for_load_state("networkidle", timeout=15000)
     text = page.inner_text("body")
 ```
-**Note:** Requires the venv Python (`~/venv/bin/python3`) and the server.py patch.
+**Note:** Requires the venv Python (`~/.venv/bin/python3`) and the server.py patch.
 
 ### REST API (Preferred Method)
 See `references/camoufox-rest-api-complete-reference-2026-06-04.md` for the complete protocol.
@@ -1999,7 +2043,7 @@ See `references/batch-scoring-pitfalls-2026-06-09.md` for the full post-mortem a
 See `references/camoufox-rest-unicef-pageup-pattern-2026-06-06.md` for the UNICEF PageUp-specific scraping pattern, title extraction from URL slugs, and post-processing workflow.
 
 - **🆕 Domain variable overwrite bug in score_all.py (2026-06-09):** The scoring engine's `dom` variable was sequentially overwritten by each matching domain keyword. AI roles (cap=22) with cybersecurity content could get capped at 14 because `dom='cyber'` was set AFTER `dom='ai'`. The fix: track ALL domains with `dom_scores = {}`, pick the highest-scoring domain for the cap. This is documented in `references/scoring-engine-v2-architecture-2026-06-09.md`.
-- **🆕 score_all.py overwritten without backup (2026-06-09):** During a session of penalty tuning, domain cap fixes, and date parser patches, `score_all.py` was overwritten 3+ times with no versioned backup. The original v1 scoring logic (which produced the 2026-06-09 15:36 tracker with 6 STRONG entries) is **permanently lost**. The only remaining trace is the backup tracker file itself. **Rule: Before ANY edit to the scoring engine, run `cp score_all.py BACKUP/score_all_$(date +%Y%m%d_%H%M).py`.** See `references/scoring-engine-v2-architecture-2026-06-09.md` for the recovered architecture and calibration anchors. Additional bug details (domain overwrite, unicode whitespace, missing robotics keywords) are in the `vacancy-compatibility-scoring-engine` skill at `references/batch-scoring-bugs-domain-overwrite-unicode-robotics-2026-06-09.md`.
+- **🆕 score_all.py overwritten without backup (2026-06-09):** During a session of penalty tuning, domain cap fixes, and date parser patches, `score_all.py` was overwritten 3+ times with no versioned backup. The original v1 scoring logic (which produced the 2026-06-09 15:36 tracker with 6 STRONG entries) is **permanently lost**. The only remaining trace is the backup tracker file itself. **Rule: Before ANY edit to the scoring engine, run `cp score_all.py BACKUP/score_all_$(date +%Y%m%d_%H%M).py`.** See `references/scoring-engine-v2-architecture-2026-06-09.md` for the recovered architecture and calibration anchors. Additional bug details (domain overwrite, unicode whitespace, missing robotics keywords) are in the `vaccancy-compatibility-scoring-engine` skill at `references/batch-scoring-bugs-domain-overwrite-unicode-robotics-2026-06-09.md`.
 - **Emoji breaks positional parsing:** 🚨 Fixed-width column parsing FAILS when emoji characters (🔴🟠🟡🟢) are present. A single emoji is 1 Python string index position but 4 bytes in UTF-8, causing all subsequent column positions to shift. The header line shows visual positions that don't match Python string indices. **Solution:** Use regex to find the emoji first, then extract fields relative to the emoji position, not by fixed indices. Or parse the entire line with `re.split(r'\s{2,}', line)` after stripping emoji, then re-insert. See `references/emoji-tracker-parsing-2026-06-04.md` for the canonical parsing approach.
 - **🆕 Archive vs Tracker confusion → STOP/HALT incident (2026-06-06):** `UN-VACANCIES-ARCHIVE.txt` (comprehensive historical record with scoring details, roster, new entries) and `UN-VACANCIES-TRACKER.txt` (live active vacancies table, rebuilt from scratch) are NOT interchangeable. When the user says "ARCHIVE", never infer the live tracker also needs editing. If the user gives any STOP/HALT/WRONG-FILE signal, halt immediately, do not "finish the current step," restore from backup. Full protocol: `references/archive-file-structure-and-workflow-pitfalls.md`.
 - **Camoufox tab crash after ~10 navigations:** Save progress every 5-8 calls
@@ -2012,10 +2056,10 @@ See `references/camoufox-rest-unicef-pageup-pattern-2026-06-06.md` for the UNICE
 |- **UNICEF Playwright crash (resolved 2026-06-06):** `run_unicef.py` crashes with Playwright Node v24 incompatibility + AWS WAF. **RESOLVED:** Camoufox REST API with 25s JS render waits extracts FULL JD content (8-14KB). See the "UNICEF Camoufox REST API" pitfall above for details.
 |- **Unified scanner UnboundLocalError in Phase A2:**
 |- **🚨 camoufox_rest_scan.py saves listing page content, NOT individual job detail pages (verified 2026-06-08):** When run, `camoufox_rest_scan.py` saves files named `UNICEF_XXXXXX_Current vacancies.md` that contain the UNICEF careers listing page (with cookie banners, navigation, and "Current vacancies" h1) — NOT the actual job detail page content. These files are NOT useful for scoring. After running, inspect filenames — any file with "Current vacancies" in the name is a listing dump, not a JD. Delete these files. Use `camoufox_fulljd_scraper_v2.py` instead (runs ICRC + UNICEF one-by-one with 25s waits) for proper full-JD extraction. The `camoufox_rest_scan.py` WTO function similarly only captures Workday listing pages.
-|- **🚨 run_workday.py without agency argument only scans IMF (not WFP/UNHCR) (verified 2026-06-08):** The script at `scripts/run_workday.py` accepts an optional positional argument for the target agency (`workday`, `imf`, `unhcr`). When called without arguments, it defaults to IMF only. WFP requires `uv run python3 run_workday.py wfp` and UNHCR requires `uv run python3 run_workday.py unhcr`. To scan all Workday portals, run the script once per agency. Running `run_workday.py` alone does NOT scan WFP or UNHCR.
+|- **🚨 run_workday.py without agency argument only scans IMF (not WFP/UNHCR) (verified 2026-06-08):** The script at `scripts/run_workday.py` accepts an optional positional argument for the target agency (`workday`, `imf`, `unhcr`). When called without arguments, it defaults to IMF only. WFP requires `~/.venv/bin/python3 run_workday.py wfp` and UNHCR requires `~/.venv/bin/python3 run_workday.py unhcr`. To scan all Workday portals, run the script once per agency. Running `run_workday.py` alone does NOT scan WFP or UNHCR.
 |- **🚨 camoufox_fulljd_scraper_v2.py re-scrapes jobs already in tracker (verified 2026-06-08):** After running the full-JD scraper for ICRC + UNICEF, 28 new JD files were created but ALL 15 UNICEF jobs and ALL 13 ICRC jobs were already in the tracker from previous scans. Before adding new entries to the tracker, always cross-reference Vacancy IDs against the existing tracker. Use `grep` on UN-VACANCIES-TRACKER.txt to check if a VID already exists before treating it as new. `curl -s "http://localhost:8888/search?q=site:careers.un.org+IT+P4&format=json"`
 - **🆕 Found-during-scan but not saved (verified 2026-06-13):** UNICEF_593464 (Digital Learning and Teacher Consultant, Helsinki) was discovered during a keyword search scan but was NOT extracted, saved to JD_FILES/, or added to the tracker. It appeared in a "report" with an incorrect `TBD` note when the live portal showed a clear `17 Jun 2026` deadline. **Rule:** When you find a vacancy during keyword search, you must extract the full JD, save it as a markdown file, and add it to the tracker — in the same session. A "report" is not a substitute for capture. If you cannot extract the full JD (time constraints, portal issues), flag it explicitly with the VID and what happened — never mark a live-deadline vacancy as TBD.
-- **🆕 Domain variable overwrite bug + missing robotics keywords (2026-06-09):** See `vacancy-compatibility-scoring-engine/references/batch-scoring-bugs-domain-overwrite-missing-ai-2026-06-09.md` for the complete post-mortem. Three bugs found during a full rescoring audit: (1) `dom` variable overwritten by each domain check → AI roles capped at wrong domain's limit; (2) AI keyword list missing `robot`, `robotics`, `humanoid` → UNICEF Humanoid Robots scored 42 instead of 64; (3) Unicode whitespace `\xa0` in deadline parser → wrong dates parsed. All fixed in current `score_all.py`.
+- **🆕 Domain variable overwrite bug + missing robotics keywords (2026-06-09):** See `vaccancy-compatibility-scoring-engine/references/batch-scoring-bugs-domain-overwrite-missing-ai-2026-06-09.md` for the complete post-mortem. Three bugs found during a full rescoring audit: (1) `dom` variable overwritten by each domain check → AI roles capped at wrong domain's limit; (2) AI keyword list missing `robot`, `robotics`, `humanoid` → UNICEF Humanoid Robots scored 42 instead of 64; (3) Unicode whitespace `\xa0` in deadline parser → wrong dates parsed. All fixed in current `score_all.py`.
 - **🆕 Camoufox tab fatigue (2026-06-09):** Camoufox crashes with SIGKILL (exit 137) after ~10-12 navigations. Root cause: tab accumulation without cleanup. **Mitigation:** Restart Camoufox server between batch operations, or use SearXNG fallback for remaining portals. For batch scraping (e.g. UNICEF), use a single Python script with Camoufox REST API instead of per-job navigation.
 - **🆕 Deadline audit protocol (2026-06-12):** See `references/deadline-formats-and-audit-protocol.md` for the complete per-agency deadline format table, known scraper bugs (INSPIRA off-by-one, WTO 404 = expired), and the systematic audit procedure. Run this audit whenever deadlines are questioned or before delivering a scan report.
 - **🆕 TBD deadline audit protocol (2026-06-13):** See `references/tbd-deadline-audit-protocol-2026-06-13.md` for the systematic 3-round validation procedure. Most agencies never post without a deadline — every TBD must be justified as Roster or genuinely Rolling. Also captures the UNIDO portal edge case (listing table has deadlines scrapers miss) and the World Bank "Not Specified" template pattern.

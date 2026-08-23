@@ -1,7 +1,7 @@
 # UN System Portal Coverage Gap Analysis — May 2026
 
 ## Source: Wikipedia "United Nations System" page (May 2026)
-## Method: Extracted via browser_console document.body.innerText, compared against un-jobs-search-minimaltoken batch definitions
+## Method: Extracted via browser_console document.body.innerText, compared against the legacy scanner batch definitions
 
 ## Summary
 
