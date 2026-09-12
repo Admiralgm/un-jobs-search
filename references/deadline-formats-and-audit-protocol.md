@@ -97,9 +97,15 @@ curl -sL --max-time 10 "https://careers.icrc.org/job/{slug}/{vid}/" | grep -i "A
 - DD.MM.YYYY format. Some pages require browser.
 
 ### WFP / Workday (wd3.myworkdaysite.com)
-- JS-rendered, curl returns shell only. Browser required.
-- Local files: "DEADLINE FOR APPLICATIONS" header, date in separate section —
-  extract via browser console on the live posting.
+- CORRECTED 2026-08-31: curl DOES return the full JD including the deadline —
+  no browser needed (verified on 7 live postings):
+```bash
+curl -s "{detail_url}" -A "Mozilla/5.0" | grep -o 'DEADLINE FOR APPLICATIONS\s*[0-9]\{1,2\} [A-Za-z]* [0-9]\{4\}'
+# format: "DEADLINE FOR APPLICATIONS 13 September 2026-23:59-GMT+01:00"
+# LD+JSON backup field: "validThrough":"2026-09-14" (= deadline + 1 day)
+```
+- JD files written by run_workday.py since 2026-08-31 carry a `**Deadline:**`
+  header line extracted automatically at save time.
 
 ### UNITAR — unitar.org (roster)
 - Roster positions have NO fixed deadline → GENUINE TBD, keep in Rolling section.

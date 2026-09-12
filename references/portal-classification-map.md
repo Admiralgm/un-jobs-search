@@ -16,7 +16,7 @@
 |--------|-----|-------|
 | **WHO Taleo** | careers.who.int/careersection/ex/jobsearch.ftl | 44+ jobs. No login. |
 | **UNHCR Workday** | unhcr.wd3.myworkdayjobs.com/en-GB/External | 29+ jobs. No login. |
-| **IAEA Taleo** | iaea.taleo.net/careersection/ex/jobsearch.ftl | 36+ jobs. Login: XXXXXX / XXXXXX |
+| **IAEA Taleo** | iaea.taleo.net/careersection/ex/jobsearch.ftl | 36+ jobs. Login: your-handle / YOUR_PASSWORD |
 | **IOM Oracle Cloud** | fa-evlj-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/jobs | 174+ jobs. No login. |
 | **COE Talents** | talents.coe.int/en_GB/careersmarketplace/SearchJobs | 13+ jobs. Pagination via JS click. |
 | **IMF Workday** | imf.wd5.myworkdayjobs.com/IMF | 12 jobs (non-ICT). Search works: add `?q=ICT`. Accept cookies first. |
